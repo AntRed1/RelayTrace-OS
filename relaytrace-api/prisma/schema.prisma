@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Company {
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  subscriptionStatus String   @default("active")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  users          User[]
+  trips          Trip[]
+  alerts         Alert[]
+  auditLogs      AuditLog[]
+  relayEmailLogs RelayEmailLog[]
+
+  @@index([subscriptionStatus])
+}
+
+model User {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role    @relation(fields: [roleId], references: [id])
+
+  name         String
+  email        String @unique
+  passwordHash String
+  status       String @default("active")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trips     Trip[]
+  auditLogs AuditLog[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([roleId])
+}
+
+model Role {
+  id          String @id @default(cuid())
+  name        String @unique
+  permissions String // JSON array: ["read:trips", "write:trips"]
+
+  users User[]
+
+  @@index([name])
+}
+
+model Trip {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  driverId String
+  driver   User   @relation(fields: [driverId], references: [id])
+
+  tripId        String // ID de Amazon Relay
+  status        String  @default("pending") // pending, confirmed, flagged
+  sourceType    String  @default("manual") // manual, ocr, relay_email
+  screenshotUrl String?
+
+  registeredAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  alerts          Alert[]
+  ocrresults      OCRResult[]
+  reconciliations Reconciliation[]
+
+  @@unique([companyId, tripId])
+  @@index([companyId])
+  @@index([driverId])
+  @@index([status])
+}
+
+model Reconciliation {
+  id        String @id @default(cuid())
+  companyId String
+
+  tripId String?
+  trip   Trip?   @relation(fields: [tripId], references: [id])
+
+  relayEmailLogId String
+  relayEmailLog   RelayEmailLog @relation(fields: [relayEmailLogId], references: [id])
+
+  matched           Boolean  @default(false)
+  discrepancyReason String?
+  checkedAt         DateTime @default(now())
+
+  @@index([companyId])
+  @@index([tripId])
+  @@index([relayEmailLogId])
+}
+
+model OCRResult {
+  id              String  @id @default(cuid())
+  tripId          String
+  trip            Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  extractedTripId String?
+  confidenceScore Float   @default(0)
+  rawText         String  @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([tripId])
+}
+
+model Alert {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  alertType String // duplicate, missing, fraud
+  resolved  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([tripId])
+  @@index([resolved])
+}
+
+model AuditLog {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  action   String // login, create_trip, delete_trip
+  metadata String // JSON metadata
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([action])
+}
+
+model RelayEmailLog {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  relayTripId          String
+  emailTimestamp       DateTime
+  parsedData           String   @db.Text
+  reconciliationStatus String   @default("pending") // pending, matched, unmatched
+
+  createdAt DateTime @default(now())
+
+  reconciliations Reconciliation[]
+
+  @@index([companyId])
+  @@index([relayTripId])
+  @@index([reconciliationStatus])
+}

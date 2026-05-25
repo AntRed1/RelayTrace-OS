@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: relaytrace-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: relaytrace
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./relaytrace-api
+    container_name: relaytrace-api
+    environment:
+      DATABASE_URL: mysql://root:root@mysql:3306/relaytrace
+      JWT_SECRET: dev-secret-change-in-prod
+      NODE_ENV: development
+    ports:
+      - "3001:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./relaytrace-api/src:/app/src
+
+  web:
+    build:
+      context: ./relaytrace-web
+    container_name: relaytrace-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./relaytrace-web/src:/app/src
+
+volumes:
+  mysql_data:
