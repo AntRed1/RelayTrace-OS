@@ -16,6 +16,7 @@ export function useAllTrips(params?: {
   limit?: number;
   status?: string;
   driverId?: string;
+  companyId?: string;
 }) {
   return useQuery({
     queryKey: [TRIPS_KEY, "all", params],

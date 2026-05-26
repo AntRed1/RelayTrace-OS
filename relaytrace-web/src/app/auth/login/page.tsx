@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -72,7 +72,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder="you@company.com"
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-800 bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:border-blue-500 placeholder:text-slate-400 transition-all"
-                style={{ focusRingColor: "rgb(37 99 235 / .3)" }}
+                style={{ "--tw-ring-color": "rgb(37 99 235 / .3)" } as React.CSSProperties}
               />
               {errors.email && (
                 <p className="text-xs text-red-500 mt-1">

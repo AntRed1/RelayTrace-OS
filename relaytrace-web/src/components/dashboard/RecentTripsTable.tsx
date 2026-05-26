@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Trip } from "@/types";
 import { safeFormat } from "@/lib/utils";
+import { ROUTES } from "@/config/constants";
 
 const statusStyles: Record<
   string,
@@ -10,7 +12,22 @@ const statusStyles: Record<
   flagged: { bg: "#fef2f2", color: "#dc2626", label: "Flagged" },
 };
 
-export function RecentTripsTable({ trips }: { trips: Trip[] }) {
+interface Props {
+  trips: Trip[];
+  isSuperAdmin?: boolean;
+}
+
+export function RecentTripsTable({ trips, isSuperAdmin = false }: Props) {
+  const headers = [
+    "Trip ID",
+    "Driver",
+    ...(isSuperAdmin ? ["Company"] : []),
+    "Registered",
+    "Status",
+  ];
+
+  const colCount = headers.length;
+
   return (
     <div
       className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
@@ -18,15 +35,18 @@ export function RecentTripsTable({ trips }: { trips: Trip[] }) {
     >
       <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
         <h2 className="text-sm font-semibold text-slate-800">Recent Trips</h2>
-        <button className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+        <Link
+          href={ROUTES.ADMIN.TRIPS}
+          className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+        >
           View all →
-        </button>
+        </Link>
       </div>
 
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100">
-            {["Trip ID", "Driver", "Registered", "Status"].map((h) => (
+            {headers.map((h) => (
               <th
                 key={h}
                 className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide"
@@ -48,9 +68,12 @@ export function RecentTripsTable({ trips }: { trips: Trip[] }) {
                     i < trips.length - 1 ? "1px solid #f8fafc" : "none",
                 }}
               >
+                {/* Trip ID */}
                 <td className="px-5 py-3.5 font-medium text-slate-800">
                   {trip.tripId}
                 </td>
+
+                {/* Driver */}
                 <td className="px-5 py-3.5">
                   <p className="font-medium text-slate-800">
                     {trip.driver?.name ?? "—"}
@@ -59,9 +82,28 @@ export function RecentTripsTable({ trips }: { trips: Trip[] }) {
                     {trip.driver?.email ?? ""}
                   </p>
                 </td>
+
+                {/* Company — solo SUPER_ADMIN */}
+                {isSuperAdmin && (
+                  <td className="px-5 py-3.5">
+                    {trip.company ? (
+                      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-lg">
+                        {trip.company.name}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-xs text-slate-300">
+                        {trip.companyId.slice(0, 8)}…
+                      </span>
+                    )}
+                  </td>
+                )}
+
+                {/* Registered */}
                 <td className="px-5 py-3.5 text-xs text-slate-500">
                   {safeFormat(trip.registeredAt, "MMM d, h:mm a")}
                 </td>
+
+                {/* Status */}
                 <td className="px-5 py-3.5">
                   <span
                     className="text-xs font-semibold px-2.5 py-1 rounded-lg"
@@ -73,10 +115,11 @@ export function RecentTripsTable({ trips }: { trips: Trip[] }) {
               </tr>
             );
           })}
+
           {trips.length === 0 && (
             <tr>
               <td
-                colSpan={4}
+                colSpan={colCount}
                 className="px-5 py-10 text-center text-sm text-slate-400"
               >
                 No trips yet

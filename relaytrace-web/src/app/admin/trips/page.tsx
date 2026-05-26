@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { TopBar } from "@/components/layouts/TopBar";
 import { useAllTrips } from "@/hooks/use-trips";
-import { Loader2, Search } from "lucide-react";
+import { useAllCompanies } from "@/hooks/use-companies";
+import { useAuthStore } from "@/stores/auth.store";
+import { Loader2, Search, Building2 } from "lucide-react";
 import { safeFormat } from "@/lib/utils";
 
 const statusMap: Record<string, { bg: string; color: string; label: string }> =
@@ -22,20 +24,32 @@ const sourceMap: Record<string, string> = {
 export default function TripsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
+  const [companyId, setCompanyId] = useState("");
+
+  const user = useAuthStore((s) => s.user);
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+
+  // Solo fetch si el usuario es SUPER_ADMIN — evita 403 para otros roles
+  const { data: companies } = useAllCompanies(isSuperAdmin);
 
   const { data, isLoading } = useAllTrips({
     page,
     limit: 15,
     status: status || undefined,
+    companyId: companyId || undefined,
   });
+
   const trips = data?.data ?? [];
   const meta = data?.meta;
+
+  const selectedCompanyName = companies?.find((c) => c.id === companyId)?.name;
 
   return (
     <>
       <TopBar title="Trips" />
       <main className="flex-1 p-6 space-y-5 page-enter">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Búsqueda por Trip ID (no conectada aún al hook) */}
           <div className="relative max-w-xs flex-1">
             <Search
               size={14}
@@ -46,6 +60,33 @@ export default function TripsPage() {
               className="w-full pl-8 pr-3.5 py-2 rounded-xl text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400 transition-all"
             />
           </div>
+
+          {/* Selector de empresa — solo SUPER_ADMIN */}
+          {isSuperAdmin && companies && companies.length > 0 && (
+            <div className="relative">
+              <Building2
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
+              <select
+                value={companyId}
+                onChange={(e) => {
+                  setCompanyId(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-8 pr-8 py-2 rounded-xl text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 appearance-none cursor-pointer transition-all"
+              >
+                <option value="">All companies</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Filtros de estado */}
           <div className="flex items-center gap-1.5">
             {["", "pending", "confirmed", "flagged"].map((s) => (
               <button
@@ -71,6 +112,16 @@ export default function TripsPage() {
           </div>
         </div>
 
+        {/* Chip de empresa seleccionada */}
+        {isSuperAdmin && selectedCompanyName && (
+          <p className="text-xs text-slate-500">
+            Showing trips for{" "}
+            <span className="font-semibold text-blue-600">
+              {selectedCompanyName}
+            </span>
+          </p>
+        )}
+
         <div
           className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
           style={{ boxShadow: "var(--rt-shadow-sm)" }}
@@ -78,22 +129,30 @@ export default function TripsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100">
-                {["Trip ID", "Driver", "Registered", "Source", "Status"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
+                {[
+                  "Trip ID",
+                  ...(isSuperAdmin ? ["Company"] : []),
+                  "Driver",
+                  "Registered",
+                  "Source",
+                  "Status",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center">
+                  <td
+                    colSpan={isSuperAdmin ? 6 : 5}
+                    className="px-5 py-12 text-center"
+                  >
                     <Loader2
                       size={20}
                       className="animate-spin text-blue-500 mx-auto"
@@ -103,7 +162,7 @@ export default function TripsPage() {
               ) : trips.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={isSuperAdmin ? 6 : 5}
                     className="px-5 py-12 text-center text-sm text-slate-400"
                   >
                     No trips found
@@ -112,6 +171,10 @@ export default function TripsPage() {
               ) : (
                 trips.map((trip, i) => {
                   const s = statusMap[trip.status] ?? statusMap.pending;
+                  const companyName = companies?.find(
+                    (c) => c.id === trip.companyId,
+                  )?.name;
+
                   return (
                     <tr
                       key={trip.id}
@@ -124,6 +187,15 @@ export default function TripsPage() {
                       <td className="px-5 py-3.5 font-medium text-slate-800">
                         {trip.tripId}
                       </td>
+                      {isSuperAdmin && (
+                        <td className="px-5 py-3.5 text-xs text-slate-500">
+                          {companyName ?? (
+                            <span className="font-mono text-slate-300">
+                              {trip.companyId.slice(0, 8)}…
+                            </span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-5 py-3.5">
                         <p className="font-medium text-slate-800">
                           {trip.driver?.name ?? "—"}

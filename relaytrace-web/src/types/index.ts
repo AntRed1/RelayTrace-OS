@@ -35,17 +35,38 @@ export interface Company {
   updatedAt: string;
 }
 
+export type CompanyRequestStatus = "pending" | "approved" | "rejected";
+
+export interface CompanyRequest {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string | null;
+  driverCount?: number | null;
+  notes?: string | null;
+  status: CompanyRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ============================================================
 // Trip
 // ============================================================
 export type TripStatus = "pending" | "confirmed" | "flagged";
 export type TripSourceType = "manual" | "ocr" | "relay_email";
 
+export interface CompanySummary {
+  id: string;
+  name: string;
+}
+
 export interface Trip {
   id: string;
   companyId: string;
   driverId: string;
   driver: DriverSummary;
+  company?: CompanySummary;
   tripId: string;
   status: TripStatus;
   sourceType: TripSourceType;
@@ -119,11 +140,19 @@ export interface DashboardActivity {
 // ============================================================
 // Reconciliation
 // ============================================================
+export interface RelayEmailLog {
+  id: string;
+  relayTripId: string;
+  subject?: string;
+  receivedAt?: string;
+}
+
 export interface Reconciliation {
   id: string;
   companyId: string;
   tripId: string | null;
   relayEmailLogId: string;
+  relayEmailLog?: RelayEmailLog | null;
   matched: boolean;
   discrepancyReason: string | null;
   checkedAt: string;

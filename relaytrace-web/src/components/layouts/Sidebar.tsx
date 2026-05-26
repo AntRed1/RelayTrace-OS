@@ -10,26 +10,49 @@ import {
   GitMerge,
   Settings,
   LogOut,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/stores/auth.store";
 import { ROUTES } from "@/config/constants";
+import { useCompanyRequests } from "@/hooks/use-companies";
 
-const navItems = [
-  { label: "Dashboard", href: ROUTES.ADMIN.DASHBOARD, icon: LayoutDashboard },
-  { label: "Trips", href: ROUTES.ADMIN.TRIPS, icon: Truck },
-  { label: "Drivers", href: ROUTES.ADMIN.DRIVERS, icon: Users },
-  { label: "OCR Processing", href: "/admin/ocr", icon: ScanLine },
-  {
-    label: "Reconciliation",
-    href: ROUTES.ADMIN.RECONCILIATION,
-    icon: GitMerge,
-  },
+// ─── Nav items ────────────────────────────────────────────────────────────────
+
+const BASE_NAV = [
+  { label: "Dashboard",      href: ROUTES.ADMIN.DASHBOARD,      icon: LayoutDashboard },
+  { label: "Trips",          href: ROUTES.ADMIN.TRIPS,           icon: Truck },
+  { label: "People",         href: ROUTES.ADMIN.DRIVERS,         icon: Users },
+  { label: "OCR Processing", href: "/admin/ocr",                 icon: ScanLine },
+  { label: "Reconciliation", href: ROUTES.ADMIN.RECONCILIATION,  icon: GitMerge },
 ];
 
+// ─── Badge ────────────────────────────────────────────────────────────────────
+
+function PendingBadge({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <span
+      className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold text-white px-1"
+      style={{ background: "linear-gradient(135deg,#f97316,#ef4444)" }}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export function Sidebar() {
-  const pathname = usePathname();
+  const pathname    = usePathname();
   const { user, logout } = useAuth();
+  const authUser    = useAuthStore((s) => s.user);
+  const isSuperAdmin = authUser?.role === "SUPER_ADMIN";
+
+  // Badge: count pending requests (only fetched when SUPER_ADMIN)
+  const { data: pendingRequests } = useCompanyRequests("pending", isSuperAdmin);
+  const pendingCount = pendingRequests?.length ?? 0;
 
   return (
     <aside
@@ -59,7 +82,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ label, href, icon: Icon }) => {
+        {BASE_NAV.map(({ label, href, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
@@ -71,10 +94,7 @@ export function Sidebar() {
               )}
               style={
                 active
-                  ? {
-                      background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                      color: "#fff",
-                    }
+                  ? { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff" }
                   : { color: "var(--text-secondary)" }
               }
             >
@@ -83,6 +103,30 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Onboarding — SUPER_ADMIN only */}
+        {isSuperAdmin && (() => {
+          const href   = ROUTES.ADMIN.ONBOARDING;
+          const active = pathname === href || pathname.startsWith(href + "/");
+          return (
+            <Link
+              href={href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                active ? "text-white" : "hover:bg-slate-100",
+              )}
+              style={
+                active
+                  ? { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff" }
+                  : { color: "var(--text-secondary)" }
+              }
+            >
+              <ClipboardList size={17} className="shrink-0" />
+              Onboarding
+              <PendingBadge count={pendingCount} />
+            </Link>
+          );
+        })()}
       </nav>
 
       {/* User + Logout */}

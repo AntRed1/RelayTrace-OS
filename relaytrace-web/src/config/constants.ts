@@ -18,6 +18,7 @@ export const ROUTES = {
     TRIPS: "/admin/trips",
     DRIVERS: "/admin/drivers",
     RECONCILIATION: "/admin/reconciliation",
+    ONBOARDING: "/admin/onboarding",
     SETTINGS: "/admin/settings",
   },
   DISPATCHER: {
