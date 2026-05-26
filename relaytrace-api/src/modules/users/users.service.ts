@@ -38,13 +38,14 @@ export class UsersService {
     });
   }
 
-  async findById(id: string, companyId: string) {
+  async findById(id: string, companyId: string | null) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: { role: true, company: true },
     });
 
-    if (!user || user.companyId !== companyId) {
+    // companyId=null solo para SUPER_ADMIN → puede ver cualquier user
+    if (!user || (companyId && user.companyId !== companyId)) {
       throw new ResourceNotFoundException('User', id);
     }
 
@@ -52,12 +53,21 @@ export class UsersService {
     return safeUser;
   }
 
-  async findByCompany(companyId: string, page = 1, limit = 20) {
+  async findByCompany(
+    companyId: string | null,
+    page = 1,
+    limit = 20,
+    role?: string,
+  ) {
     const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = {};
+    if (companyId) where.companyId = companyId;
+    if (role) where.role = { name: role.toUpperCase() };
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: { companyId },
+        where,
         select: {
           id: true,
           name: true,
@@ -69,10 +79,11 @@ export class UsersService {
           updatedAt: true,
           role: true,
         },
+        orderBy: { name: 'asc' },
         skip,
         take: limit,
       }),
-      this.prisma.user.count({ where: { companyId } }),
+      this.prisma.user.count({ where }),
     ]);
 
     return {
@@ -86,7 +97,7 @@ export class UsersService {
     };
   }
 
-  async update(id: string, companyId: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, companyId: string | null, updateUserDto: UpdateUserDto) {
     await this.findById(id, companyId);
 
     return this.prisma.user.update({
@@ -96,7 +107,7 @@ export class UsersService {
     });
   }
 
-  async delete(id: string, companyId: string) {
+  async delete(id: string, companyId: string | null) {
     await this.findById(id, companyId);
 
     return this.prisma.user.delete({

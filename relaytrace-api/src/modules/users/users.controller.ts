@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Request,
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
@@ -48,16 +49,35 @@ export class UsersController {
 
   @Get()
   @Roles('COMPANY_ADMIN', 'SUPER_ADMIN')
-  @ApiOperation({ summary: 'Listar usuarios de la empresa' })
+  @ApiOperation({
+    summary: 'Listar usuarios de la empresa',
+    description:
+      'SUPER_ADMIN puede pasar ?companyId para filtrar por empresa y ?role para filtrar por rol.',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'companyId', required: false, type: String })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: ['DRIVER', 'DISPATCHER', 'COMPANY_ADMIN'],
+  })
   @ApiResponse({ status: 200, description: 'Lista paginada de usuarios' })
   findByCompany(
-    @CurrentUser('companyId') companyId: string,
+    @Request() req,
+    @Query('companyId') filterCompanyId?: string,
+    @Query('role') role?: string,
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
     @Query('limit', new ParseIntPipe({ optional: true })) limit = 20,
   ) {
-    return this.usersService.findByCompany(companyId, page, limit);
+    // SUPER_ADMIN usa el companyId del query param (o null = ver todos)
+    // Otros roles solo ven su propia empresa
+    const companyId =
+      req.user.role === 'SUPER_ADMIN'
+        ? (filterCompanyId ?? null)
+        : req.user.companyId;
+
+    return this.usersService.findByCompany(companyId, page, limit, role);
   }
 
   @Get(':id')
@@ -66,10 +86,9 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID del usuario' })
   @ApiResponse({ status: 200, description: 'Datos del usuario' })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser('companyId') companyId: string,
-  ) {
+  findOne(@Param('id') id: string, @Request() req) {
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
     return this.usersService.findById(id, companyId);
   }
 
@@ -79,11 +98,9 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID del usuario' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'Usuario actualizado' })
-  update(
-    @Param('id') id: string,
-    @CurrentUser('companyId') companyId: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  update(@Param('id') id: string, @Request() req, @Body() updateUserDto: UpdateUserDto) {
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
     return this.usersService.update(id, companyId, updateUserDto);
   }
 
@@ -92,7 +109,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Eliminar usuario' })
   @ApiParam({ name: 'id', description: 'ID del usuario' })
   @ApiResponse({ status: 200, description: 'Usuario eliminado' })
-  delete(@Param('id') id: string, @CurrentUser('companyId') companyId: string) {
+  delete(@Param('id') id: string, @Request() req) {
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
     return this.usersService.delete(id, companyId);
   }
 }

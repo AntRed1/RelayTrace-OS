@@ -127,6 +127,8 @@ export class TripsService {
 
     if (user.role !== 'SUPER_ADMIN') {
       where.companyId = user.companyId;
+    } else if (filters?.companyId) {
+      where.companyId = filters.companyId;
     }
 
     if (filters?.status) where.status = filters.status;

@@ -72,7 +72,7 @@ export class TripsController {
   @ApiOperation({
     summary: 'Listar todos los viajes',
     description:
-      'SUPER_ADMIN ve todos. COMPANY_ADMIN y DISPATCHER ven solo los de su empresa.',
+      'SUPER_ADMIN ve todos (puede filtrar por companyId). COMPANY_ADMIN y DISPATCHER ven solo los de su empresa.',
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -82,14 +82,11 @@ export class TripsController {
     enum: ['pending', 'confirmed', 'flagged'],
   })
   @ApiQuery({ name: 'driverId', required: false, type: String })
+  @ApiQuery({ name: 'companyId', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Lista paginada de viajes' })
-  findAll(
-    @Request() req,
-    @Query() filters: TripFilterDto,
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
-  ) {
-    return this.tripsService.findAllTrips(req.user, filters, +page, +limit);
+  findAll(@Request() req, @Query() filters: TripFilterDto) {
+    const { page = 1, limit = 20, ...rest } = filters;
+    return this.tripsService.findAllTrips(req.user, rest, +page, +limit);
   }
 
   @Get(':id')

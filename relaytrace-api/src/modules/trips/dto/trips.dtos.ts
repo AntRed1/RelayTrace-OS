@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTripDto {
   @ApiProperty({
@@ -31,6 +39,12 @@ export class UpdateTripDto {
 }
 
 export class TripFilterDto {
+  /** Solo SUPER_ADMIN puede usar este filtro */
+  @ApiPropertyOptional({ example: 'cmp1234' })
+  @IsOptional()
+  @IsString()
+  companyId?: string;
+
   @ApiPropertyOptional({ example: 'cmpirr6890000wgedojwrg3ud' })
   @IsOptional()
   @IsString()
@@ -53,4 +67,19 @@ export class TripFilterDto {
   @IsOptional()
   @IsString()
   sourceType?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
 }

@@ -5,35 +5,44 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getSummary(companyId: string) {
+  async getSummary(companyId: string | null) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // companyId=null → SUPER_ADMIN ve métricas globales de todas las empresas
+    const base = companyId ? { companyId } : {};
 
     const [tripsToday, activeDrivers, totalTrips, pendingAlerts] =
       await Promise.all([
         this.prisma.trip.count({
-          where: { companyId, registeredAt: { gte: today } },
+          where: { ...base, registeredAt: { gte: today } },
         }),
         this.prisma.user.count({
           where: {
-            companyId,
+            ...base,
             status: 'active',
             role: { name: 'DRIVER' },
           },
         }),
-        this.prisma.trip.count({ where: { companyId } }),
+        this.prisma.trip.count({ where: base }),
         this.prisma.alert.count({
-          where: { companyId, resolved: false },
+          where: { ...base, resolved: false },
         }),
       ]);
 
     return { tripsToday, activeDrivers, totalTrips, pendingAlerts };
   }
 
-  async getActivity(companyId: string, limit = 10) {
+  async getActivity(companyId: string | null, limit = 10) {
+    // companyId=null → SUPER_ADMIN ve trips de todas las empresas
+    const where = companyId ? { companyId } : {};
+
     const recentTrips = await this.prisma.trip.findMany({
-      where: { companyId },
-      include: { driver: { select: { id: true, name: true, email: true } } },
+      where,
+      include: {
+        driver: { select: { id: true, name: true, email: true } },
+        company: { select: { id: true, name: true } },
+      },
       orderBy: { registeredAt: 'desc' },
       take: limit,
     });

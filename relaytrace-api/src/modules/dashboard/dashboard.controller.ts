@@ -14,7 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @ApiTags('Dashboard')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('COMPANY_ADMIN', 'DISPATCHER')
+@Roles('COMPANY_ADMIN', 'DISPATCHER', 'SUPER_ADMIN')
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
@@ -23,7 +23,7 @@ export class DashboardController {
   @ApiOperation({
     summary: 'Resumen operacional',
     description:
-      'KPIs del día: viajes, conductores activos y alertas pendientes.',
+      'KPIs del día: viajes, conductores activos y alertas pendientes. SUPER_ADMIN ve métricas globales.',
   })
   @ApiResponse({
     status: 200,
@@ -38,13 +38,17 @@ export class DashboardController {
     },
   })
   getSummary(@Request() req) {
-    return this.dashboardService.getSummary(req.user.companyId);
+    // SUPER_ADMIN → companyId=null (métricas globales)
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
+    return this.dashboardService.getSummary(companyId);
   }
 
   @Get('activity')
   @ApiOperation({
     summary: 'Actividad reciente',
-    description: 'Últimos viajes registrados con info del conductor.',
+    description:
+      'Últimos viajes registrados con info del conductor y empresa. SUPER_ADMIN ve todos.',
   })
   @ApiQuery({
     name: 'limit',
@@ -54,6 +58,8 @@ export class DashboardController {
   })
   @ApiResponse({ status: 200, description: 'Lista de actividad reciente' })
   getActivity(@Request() req, @Query('limit') limit = 10) {
-    return this.dashboardService.getActivity(req.user.companyId, +limit);
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
+    return this.dashboardService.getActivity(companyId, +limit);
   }
 }
