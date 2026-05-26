@@ -3,6 +3,16 @@ import { persist } from "zustand/middleware";
 import { User } from "@/types";
 import { TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from "@/config/constants";
 
+function setCookie(name: string, value: string, days = 7) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=${value};path=/;max-age=${days * 86400};SameSite=Lax`;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=;path=/;max-age=0`;
+}
+
 interface AuthState {
   user: User | null;
   accessToken: string | null;
@@ -24,6 +34,8 @@ export const useAuthStore = create<AuthState>()(
       setSession: (user, accessToken, refreshToken) => {
         localStorage.setItem(TOKEN_KEY, accessToken);
         if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+        setCookie("rt_token", accessToken);
+        setCookie("rt_role", user.role);
         set({
           user,
           accessToken,
@@ -35,6 +47,8 @@ export const useAuthStore = create<AuthState>()(
       clearSession: () => {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        deleteCookie("rt_token");
+        deleteCookie("rt_role");
         set({
           user: null,
           accessToken: null,
@@ -47,10 +61,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: USER_KEY,
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
+      partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
     },
   ),
 );
