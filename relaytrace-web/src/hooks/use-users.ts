@@ -92,3 +92,10 @@ export function useDeleteUser() {
     },
   });
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
+      usersService.changePassword(id, newPassword),
+  });
+}

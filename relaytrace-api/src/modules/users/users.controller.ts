@@ -21,7 +21,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto } from './dto/users.dtos';
+import { CreateUserDto, UpdateUserDto, ChangePasswordDto } from './dto/users.dtos';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -113,5 +113,36 @@ export class UsersController {
     const companyId =
       req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
     return this.usersService.delete(id, companyId);
+  }
+
+  // ── PATCH /users/:id/password ─────────────────────────────────────────────
+  @Patch(':id/password')
+  @Roles('COMPANY_ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Cambiar contraseña de un usuario',
+    description:
+      'SUPER_ADMIN puede cambiar la contraseña de cualquier usuario. ' +
+      'COMPANY_ADMIN solo puede cambiar contraseñas dentro de su empresa. ' +
+      'Todos los cambios quedan registrados en el audit log.',
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario objetivo' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  changePassword(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    const isSuperAdmin  = req.user.role === 'SUPER_ADMIN';
+    const companyId     = isSuperAdmin ? null : req.user.companyId;
+    return this.usersService.changePassword(
+      id,
+      companyId,
+      req.user.sub,         // requesterId
+      req.user.companyId,   // requesterCompanyId (may be null for SUPER_ADMIN)
+      dto,
+    );
   }
 }

@@ -3,7 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { PlanService } from '../plan/plan.service';
-import { CreateUserDto, UpdateUserDto } from './dto/users.dtos';
+import { AuditService } from '../audit/audit.service';
+import { CreateUserDto, UpdateUserDto, ChangePasswordDto } from './dto/users.dtos';
 import {
   ResourceNotFoundException,
   ConflictException,
@@ -15,6 +16,7 @@ export class UsersService {
     private prisma: PrismaService,
     private authService: AuthService,
     private planService: PlanService,
+    private auditService: AuditService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -127,5 +129,39 @@ export class UsersService {
   async delete(id: string, companyId: string | null) {
     await this.findById(id, companyId);
     return this.prisma.user.delete({ where: { id } });
+  }
+
+  // ── Change password ──────────────────────────────────────────────────────────
+  async changePassword(
+    targetId: string,
+    companyId: string | null,
+    requesterId: string,
+    requesterCompanyId: string,
+    dto: ChangePasswordDto,
+  ) {
+    // Verify target exists and belongs to same company (SUPER_ADMIN bypasses)
+    const target = await this.findById(targetId, companyId);
+
+    const passwordHash = await this.authService.hashPassword(dto.newPassword);
+
+    await this.prisma.user.update({
+      where: { id: targetId },
+      data: { passwordHash },
+    });
+
+    // Audit trail — always written, even if email service is down
+    await this.auditService.log({
+      action: 'change_password',
+      userId: requesterId,
+      companyId: requesterCompanyId ?? target.companyId,
+      metadata: {
+        targetUserId:  targetId,
+        targetEmail:   target.email,
+        changedBy:     requesterId,
+        isSelfChange:  requesterId === targetId,
+      },
+    });
+
+    return { message: 'Password updated successfully' };
   }
 }

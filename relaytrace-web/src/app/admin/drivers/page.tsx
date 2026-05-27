@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { TopBar }          from "@/components/layouts/TopBar";
 import { UserFormModal, UserFormInitialData } from "@/components/people/UserFormModal";
-import { DeleteUserModal } from "@/components/people/DeleteUserModal";
+import { DeleteUserModal }      from "@/components/people/DeleteUserModal";
+import { ChangePasswordModal }  from "@/components/people/ChangePasswordModal";
 import {
   useEmployees,
   useRoles,
@@ -12,6 +13,7 @@ import {
   useDeleteUser,
   useRevokeAccess,
   useRestoreAccess,
+  useChangePassword,
 } from "@/hooks/use-users";
 import { useAllCompanies, usePlanInfo } from "@/hooks/use-companies";
 import { useAuthStore }    from "@/stores/auth.store";
@@ -26,6 +28,7 @@ import {
   ShieldOff,
   ShieldCheck,
   Trash2,
+  KeyRound,
 } from "lucide-react";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -59,10 +62,12 @@ export default function PeoplePage() {
   const [companyId, setCompanyId] = useState("");
 
   // ── modal state ───────────────────────────────────────────────────────────
-  const [createOpen, setCreateOpen]     = useState(false);
-  const [editTarget, setEditTarget]     = useState<UserFormInitialData | null>(null);
+  const [createOpen,  setCreateOpen]  = useState(false);
+  const [editTarget,  setEditTarget]  = useState<UserFormInitialData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; email: string } | null>(null);
-  const [formError, setFormError]       = useState<string | null>(null);
+  const [pwdTarget,   setPwdTarget]   = useState<{ id: string; name: string; email: string } | null>(null);
+  const [formError,   setFormError]   = useState<string | null>(null);
+  const [pwdError,    setPwdError]    = useState<string | null>(null);
 
   const authUser      = useAuthStore((s) => s.user);
   const isSuperAdmin  = authUser?.role === "SUPER_ADMIN";
@@ -89,6 +94,7 @@ export default function PeoplePage() {
   const deleteUser  = useDeleteUser();
   const revoke      = useRevokeAccess();
   const restore     = useRestoreAccess();
+  const changePwd   = useChangePassword();
 
   // ── helpers ───────────────────────────────────────────────────────────────
   const selectedCompanyName = companies?.find((c) => c.id === companyId)?.name;
@@ -142,6 +148,19 @@ export default function PeoplePage() {
       setDeleteTarget(null);
     } catch {
       // stays open so user can retry
+    }
+  }
+
+  async function handleChangePassword(newPassword: string) {
+    if (!pwdTarget) return;
+    setPwdError(null);
+    try {
+      await changePwd.mutateAsync({ id: pwdTarget.id, newPassword });
+      setPwdTarget(null);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+      setPwdError(Array.isArray(msg) ? msg.join(", ") : (msg ?? "Could not update password"));
     }
   }
 
@@ -396,6 +415,18 @@ export default function PeoplePage() {
                               <Pencil size={14} />
                             </button>
 
+                            {/* Change password */}
+                            <button
+                              onClick={() => {
+                                setPwdError(null);
+                                setPwdTarget({ id: emp.id, name: emp.name, email: emp.email });
+                              }}
+                              title="Change password"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                            >
+                              <KeyRound size={14} />
+                            </button>
+
                             {/* Revoke / Restore */}
                             {isInactive ? (
                               <button
@@ -508,6 +539,17 @@ export default function PeoplePage() {
         isDeleting={deleteUser.isPending}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
+      />
+
+      {/* Change Password */}
+      <ChangePasswordModal
+        open={!!pwdTarget}
+        userName={pwdTarget?.name ?? ""}
+        userEmail={pwdTarget?.email ?? ""}
+        isSubmitting={changePwd.isPending}
+        error={pwdError}
+        onSubmit={handleChangePassword}
+        onClose={() => { setPwdTarget(null); setPwdError(null); }}
       />
     </>
   );

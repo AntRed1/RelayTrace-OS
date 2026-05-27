@@ -8,7 +8,11 @@ export type AuditAction =
   | 'update_trip'
   | 'delete_trip'
   | 'create_user'
-  | 'update_user';
+  | 'update_user'
+  | 'delete_user'
+  | 'change_password'
+  | 'revoke_access'
+  | 'restore_access';
 
 @Injectable()
 export class AuditService {

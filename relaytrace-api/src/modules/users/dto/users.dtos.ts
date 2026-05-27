@@ -30,6 +30,13 @@ export class CreateUserDto {
   companyId: string;
 }
 
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'NewPass2026!', minLength: 8 })
+  @IsString()
+  @MinLength(8)
+  newPassword: string;
+}
+
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'Juan Pérez' })
   @IsString()

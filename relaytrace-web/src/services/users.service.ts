@@ -80,6 +80,14 @@ export const usersService = {
     return data.data;
   },
 
+  async changePassword(id: string, newPassword: string): Promise<{ message: string }> {
+    const { data } = await apiClient.patch<ApiResponse<{ message: string }>>(
+      `/users/${id}/password`,
+      { newPassword },
+    );
+    return data.data;
+  },
+
   async getRoles(): Promise<RoleItem[]> {
     const { data } = await apiClient.get<ApiResponse<RoleItem[]>>("/roles");
     return data.data;
