@@ -1,69 +1,108 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
-  Request,
-  UseGuards,
+  Param,
   Headers,
   RawBodyRequest,
   Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiBody,
   ApiHeader,
+  ApiParam,
 } from '@nestjs/swagger';
+
 import { BillingService } from './billing.service';
-import { CreateCheckoutDto } from './dto/billing.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { PreRegistrationCheckoutDto } from './dto/billing.dto';
 
 @ApiTags('Billing')
 @Controller('billing')
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
-  @Post('create-checkout')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('COMPANY_ADMIN')
-  @ApiBearerAuth('JWT')
+  // ──────────────────────────────────────────────────────────────────────────
+  // POST /billing/checkout  (PUBLIC — no JWT)
+  // Creates a Stripe Checkout session for a company that does not yet exist.
+  // Company data is embedded in session metadata and replayed via the webhook.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  @Post('checkout')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Crear sesión de checkout Stripe',
-    description: 'Genera una URL de pago para suscribir la empresa a un plan.',
+    summary: 'Create self-service Stripe Checkout session (public)',
+    description:
+      'Called from the landing page. Does not require authentication — ' +
+      'the company is created only after the webhook confirms payment.',
   })
-  @ApiBody({ type: CreateCheckoutDto })
+  @ApiBody({ type: PreRegistrationCheckoutDto })
   @ApiResponse({
     status: 201,
-    description: 'URL de checkout generada',
-    schema: { example: { url: 'https://checkout.stripe.com/...' } },
+    description: 'Returns the Stripe Checkout URL to redirect the user to.',
+    schema: { example: { url: 'https://checkout.stripe.com/pay/cs_...' } },
   })
-  @ApiResponse({ status: 403, description: 'Solo COMPANY_ADMIN puede acceder' })
-  createCheckout(@Request() req, @Body() dto: CreateCheckoutDto) {
-    return this.billingService.createCheckoutSession(
-      req.user.companyId,
-      dto.priceId,
-      dto.successUrl,
-      dto.cancelUrl,
-    );
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or company email already exists.',
+  })
+  createCheckout(@Body() dto: PreRegistrationCheckoutDto) {
+    return this.billingService.createPreRegistrationCheckout(dto);
   }
 
-  @Post('webhook')
+  // ──────────────────────────────────────────────────────────────────────────
+  // GET /billing/session/:sessionId/status  (PUBLIC)
+  // Used by the /onboarding/success page to display confirmation details.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  @Get('session/:sessionId/status')
   @ApiOperation({
-    summary: 'Webhook de Stripe',
+    summary: 'Get Stripe Checkout session status (public)',
     description:
-      'Endpoint exclusivo para eventos de Stripe. No requiere autenticación JWT — usa firma HMAC del header stripe-signature.',
+      'Returns minimal session data (status, email, plan) so the success ' +
+      'page can confirm payment without exposing sensitive Stripe data.',
+  })
+  @ApiParam({ name: 'sessionId', example: 'cs_test_a1b2c3...' })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: {
+        status: 'complete',
+        customerEmail: 'juan@transportes.com',
+        companyName: 'Transportes del Norte LLC',
+        plan: 'growth',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  getSessionStatus(@Param('sessionId') sessionId: string) {
+    return this.billingService.getSessionStatus(sessionId);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // POST /billing/webhook  (PUBLIC — Stripe HMAC signature verified internally)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  @Post('webhook')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Stripe webhook receiver',
+    description:
+      'Processes Stripe events. Authentication is handled via the ' +
+      'stripe-signature HMAC header — do NOT add JWT guards here.',
   })
   @ApiHeader({
     name: 'stripe-signature',
-    description: 'Firma HMAC enviada por Stripe',
+    description: 'HMAC signature sent by Stripe',
     required: true,
   })
-  @ApiResponse({ status: 201, description: 'Evento procesado' })
-  @ApiResponse({ status: 400, description: 'Firma inválida' })
+  @ApiResponse({ status: 200, description: 'Event received and processed' })
+  @ApiResponse({ status: 400, description: 'Invalid signature' })
   handleWebhook(
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,

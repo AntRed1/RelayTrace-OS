@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TopBar } from "@/components/layouts/TopBar";
+import { PlanGate } from "@/components/plan/PlanGate";
 import {
   useReconciliation,
   useReconciliationSummary,
@@ -18,8 +19,9 @@ export default function ReconciliationPage() {
   const meta = data?.meta;
 
   return (
-    <>
-      <TopBar title="Reconciliation" />
+    <PlanGate feature="reconciliation">
+      <>
+        <TopBar title="Reconciliation" />
       <main className="flex-1 p-6 space-y-5 page-enter">
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-4">
@@ -203,7 +205,8 @@ export default function ReconciliationPage() {
             </div>
           )}
         </div>
-      </main>
-    </>
+        </main>
+      </>
+    </PlanGate>
   );
 }

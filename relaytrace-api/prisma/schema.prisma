@@ -12,12 +12,15 @@ datasource db {
 }
 
 model Company {
-  id                 String   @id @default(cuid())
-  name               String
-  email              String   @unique
-  subscriptionStatus String   @default("active")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String
+  email                String   @unique
+  subscriptionStatus   String   @default("active")
+  plan                 String   @default("starter") // starter | growth | fleet
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   users          User[]
   trips          Trip[]
@@ -173,6 +176,15 @@ model CompanyRequest {
 
   @@index([status])
   @@index([email])
+}
+
+/// Idempotency guard — prevents duplicate processing of Stripe webhook events
+model ProcessedWebhookEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  processedAt   DateTime @default(now())
+
+  @@index([stripeEventId])
 }
 
 model RelayEmailLog {

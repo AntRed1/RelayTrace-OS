@@ -1,16 +1,51 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import {
   Injectable,
   Logger,
-  NotFoundException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
-
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import Stripe from 'stripe';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../notifications/email.service';
+import { PreRegistrationCheckoutDto } from './dto/billing.dto';
+import { PlanName } from '../../config/plan.config';
+
+// ─── Local types (avoid Stripe namespace resolution issues) ───────────────────
+
+interface CheckoutMetadata {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  driverCount?: string;
+  plan: string;
+}
+
+interface StripeSessionLike {
+  id: string;
+  status: string | null;
+  customer: string | { id: string } | null;
+  subscription: string | { id: string } | null;
+  metadata: Record<string, string> | null;
+  customer_details: { email?: string | null } | null;
+}
+
+interface StripeSubscriptionLike {
+  id: string;
+  status: string;
+}
+
+interface StripeEventLike {
+  id: string;
+  type: string;
+  data: { object: unknown };
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class BillingService {
@@ -20,6 +55,7 @@ export class BillingService {
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
   ) {
     this.stripe = new Stripe(this.getEnv('STRIPE_SECRET_KEY'));
   }
@@ -30,187 +66,371 @@ export class BillingService {
 
   private getEnv(key: string): string {
     const value = this.config.get<string>(key);
-
-    if (!value) {
-      throw new Error(`Missing environment variable: ${key}`);
-    }
-
+    if (!value) throw new Error(`Missing environment variable: ${key}`);
     return value;
   }
 
-  // =========================================================
-  // Checkout Session
-  // =========================================================
+  /**
+   * Resolves the Stripe price ID for a given plan.
+   * Returns null for Fleet (custom — must contact sales).
+   */
+  private getPriceId(plan: PlanName): string | null {
+    const map: Partial<Record<PlanName, string>> = {
+      starter: this.config.get<string>('STRIPE_PRICE_STARTER') ?? '',
+      growth:  this.config.get<string>('STRIPE_PRICE_GROWTH')  ?? '',
+    };
+    return map[plan] || null;
+  }
 
-  async createCheckoutSession(
-    companyId: string,
-    priceId: string,
-    successUrl: string,
-    cancelUrl: string,
-  ) {
-    const company = await this.prisma.company.findUnique({
-      where: {
-        id: companyId,
-      },
-    });
+  /**
+   * Generates a secure temporary password that meets common policy requirements:
+   * at least one uppercase letter, one digit, one special character, 12 chars total.
+   */
+  private generateTempPassword(): string {
+    const upper   = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+    const lower   = 'abcdefghjkmnpqrstuvwxyz';
+    const digits  = '23456789';
+    const special = '!@#$%';
+    const all     = upper + lower + digits + special;
 
-    if (!company) {
-      throw new NotFoundException('Company not found');
+    const randomChar = (charset: string) => {
+      const bytes = crypto.randomBytes(1);
+      return charset[bytes[0] % charset.length];
+    };
+
+    // Guarantee policy: 1 upper + 1 digit + 1 special + 9 random
+    const mandatory =
+      randomChar(upper) +
+      randomChar(digits) +
+      randomChar(special);
+
+    const rest = Array.from({ length: 9 }, () => randomChar(all)).join('');
+
+    // Shuffle the combined string
+    const combined = (mandatory + rest).split('');
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = crypto.randomBytes(1)[0] % (i + 1);
+      [combined[i], combined[j]] = [combined[j], combined[i]];
     }
 
+    return combined.join('');
+  }
+
+  // =========================================================
+  // Public: Pre-registration checkout (no JWT required)
+  // =========================================================
+
+  /**
+   * Creates a Stripe Checkout session for a company that does NOT yet exist in
+   * the DB. All company data is stored in session.metadata and replayed on the
+   * `checkout.session.completed` webhook event.
+   */
+  async createPreRegistrationCheckout(
+    dto: PreRegistrationCheckoutDto,
+  ): Promise<{ url: string }> {
+    if (dto.plan === 'fleet') {
+      throw new BadRequestException(
+        'Fleet plan requires custom pricing. Please contact sales@relaytrace.com',
+      );
+    }
+
+    const priceId = this.getPriceId(dto.plan as PlanName);
     if (!priceId) {
-      throw new BadRequestException('Price ID is required');
+      throw new BadRequestException(
+        `Stripe price ID for plan "${dto.plan}" is not configured. ` +
+          'Set STRIPE_PRICE_STARTER / STRIPE_PRICE_GROWTH in environment.',
+      );
     }
+
+    // Check if a company with this email is already registered
+    const existing = await this.prisma.company.findUnique({
+      where: { email: dto.email },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        'A company with this email address already exists. Please log in.',
+      );
+    }
+
+    const metadata: Record<string, string> = {
+      companyName: dto.companyName,
+      contactName: dto.contactName,
+      email: dto.email,
+      plan: dto.plan,
+    };
+    if (dto.phone)       metadata.phone       = dto.phone;
+    if (dto.driverCount) metadata.driverCount = String(dto.driverCount);
 
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
-
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-
-      metadata: {
-        companyId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      customer_email: dto.email,
+      metadata,
+      // Append session ID to the success URL so the success page can query status
+      success_url: `${dto.successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  dto.cancelUrl,
+      // Prefill customer name
+      billing_address_collection: 'auto',
+      subscription_data: {
+        metadata,
       },
-
-      customer_email: company.email,
-
-      success_url: successUrl,
-      cancel_url: cancelUrl,
     });
 
+    this.logger.log(
+      `Checkout session created: ${session.id} for ${dto.email} (${dto.plan})`,
+    );
+
+    return { url: session.url! };
+  }
+
+  // =========================================================
+  // Public: Session status (for success page)
+  // =========================================================
+
+  async getSessionStatus(sessionId: string) {
+    let session: StripeSessionLike;
+
+    try {
+      session = await this.stripe.checkout.sessions.retrieve(
+        sessionId,
+      ) as unknown as StripeSessionLike;
+    } catch {
+      throw new NotFoundException('Checkout session not found');
+    }
+
     return {
-      url: session.url,
+      status:        session.status,                          // 'complete' | 'expired' | 'open'
+      customerEmail: session.customer_details?.email ?? session.metadata?.email,
+      companyName:   session.metadata?.companyName,
+      plan:          session.metadata?.plan,
     };
   }
 
   // =========================================================
-  // Stripe Webhook
+  // Webhook dispatcher
   // =========================================================
 
   async handleWebhook(rawBody: Buffer, signature: string) {
     const webhookSecret = this.getEnv('STRIPE_WEBHOOK_SECRET');
-
-    let event;
+    let event: StripeEventLike;
 
     try {
       event = this.stripe.webhooks.constructEvent(
         rawBody,
         signature,
         webhookSecret,
-      );
+      ) as unknown as StripeEventLike;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-
-      this.logger.error(`Webhook signature verification failed: ${message}`);
-
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Webhook signature verification failed: ${msg}`);
       throw new BadRequestException('Invalid webhook signature');
     }
 
+    this.logger.log(`Webhook received: ${event.type} (${event.id})`);
+
     switch (event.type) {
-      // =====================================================
-      // Subscription Created / Updated
-      // =====================================================
+      case 'checkout.session.completed':
+        await this.handleCheckoutCompleted(
+          event.data.object as StripeSessionLike,
+        );
+        break;
 
+      case 'customer.subscription.updated':
       case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const sub = event.data.object as {
-          metadata?: {
-            companyId?: string;
-          };
-          status: string;
-        };
-
-        const companyId = sub.metadata?.companyId;
-
-        if (companyId) {
-          await this.prisma.company.update({
-            where: {
-              id: companyId,
-            },
-            data: {
-              subscriptionStatus: sub.status,
-            },
-          });
-
-          this.logger.log(`Subscription updated for company ${companyId}`);
-        }
-
+        await this.handleSubscriptionChange(
+          event.data.object as StripeSubscriptionLike,
+        );
         break;
-      }
 
-      // =====================================================
-      // Subscription Deleted
-      // =====================================================
-
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object as {
-          metadata?: {
-            companyId?: string;
-          };
-        };
-
-        const companyId = sub.metadata?.companyId;
-
-        if (companyId) {
-          await this.prisma.company.update({
-            where: {
-              id: companyId,
-            },
-            data: {
-              subscriptionStatus: 'canceled',
-            },
-          });
-
-          this.logger.warn(`Subscription canceled for company ${companyId}`);
-        }
-
+      case 'customer.subscription.deleted':
+        await this.handleSubscriptionCanceled(
+          event.data.object as StripeSubscriptionLike,
+        );
         break;
-      }
 
-      // =====================================================
-      // Checkout Completed
-      // =====================================================
-
-      case 'checkout.session.completed': {
-        this.logger.log('Checkout session completed');
-
+      case 'invoice.paid':
+        this.logger.log(`Invoice paid: ${event.id}`);
         break;
-      }
 
-      // =====================================================
-      // Invoice Paid
-      // =====================================================
-
-      case 'invoice.paid': {
-        this.logger.log('Invoice paid');
-
+      case 'invoice.payment_failed':
+        this.logger.warn(`Invoice payment failed: ${event.id}`);
         break;
-      }
-
-      // =====================================================
-      // Invoice Failed
-      // =====================================================
-
-      case 'invoice.payment_failed': {
-        this.logger.warn('Invoice payment failed');
-
-        break;
-      }
-
-      // =====================================================
-      // Default
-      // =====================================================
 
       default:
         this.logger.log(`Unhandled event: ${event.type}`);
     }
 
-    return {
-      received: true,
+    return { received: true };
+  }
+
+  // =========================================================
+  // Webhook handlers (private)
+  // =========================================================
+
+  /**
+   * On `checkout.session.completed`:
+   *  1. Idempotency guard — skip if already processed
+   *  2. Generate temp password, hash it
+   *  3. Atomically create Company + COMPANY_ADMIN User + ProcessedWebhookEvent
+   *  4. Send welcome, payment-confirmation, and admin-notification emails
+   */
+  private async handleCheckoutCompleted(
+    session: StripeSessionLike,
+  ): Promise<void> {
+    // ── 1. Idempotency ──────────────────────────────────────────────────────
+    const alreadyProcessed = await this.prisma.processedWebhookEvent.findUnique(
+      { where: { stripeEventId: session.id } },
+    );
+    if (alreadyProcessed) {
+      this.logger.warn(`Webhook already processed, skipping: ${session.id}`);
+      return;
+    }
+
+    // ── 2. Extract metadata ─────────────────────────────────────────────────
+    const meta = session.metadata as CheckoutMetadata | null;
+    if (!meta?.companyName || !meta?.contactName || !meta?.email || !meta?.plan) {
+      this.logger.error(
+        `checkout.session.completed missing required metadata: ${session.id}`,
+      );
+      return;
+    }
+
+    const { companyName, contactName, email, plan } = meta;
+
+    // ── 3. Resolve COMPANY_ADMIN role ───────────────────────────────────────
+    const adminRole = await this.prisma.role.findUnique({
+      where: { name: 'COMPANY_ADMIN' },
+    });
+    if (!adminRole) {
+      this.logger.error('COMPANY_ADMIN role not found in DB — cannot create user');
+      return;
+    }
+
+    // ── 4. Generate credentials ─────────────────────────────────────────────
+    const tempPassword = this.generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+    // Resolve Stripe IDs (may be string or object)
+    const stripeCustomerId =
+      typeof session.customer === 'string'
+        ? session.customer
+        : session.customer?.id ?? null;
+
+    const stripeSubscriptionId =
+      typeof session.subscription === 'string'
+        ? session.subscription
+        : session.subscription?.id ?? null;
+
+    // ── 5. Atomic DB transaction ────────────────────────────────────────────
+    let newCompany: { id: string; name: string; email: string; plan: string };
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const company = await tx.company.create({
+          data: {
+            name:                 companyName,
+            email,
+            plan:                 plan ?? 'starter',
+            subscriptionStatus:   'active',
+            stripeCustomerId:     stripeCustomerId,
+            stripeSubscriptionId: stripeSubscriptionId,
+          },
+        });
+
+        await tx.user.create({
+          data: {
+            companyId:    company.id,
+            roleId:       adminRole.id,
+            name:         contactName,
+            email,
+            passwordHash,
+            status:       'active',
+          },
+        });
+
+        await tx.processedWebhookEvent.create({
+          data: { stripeEventId: session.id },
+        });
+
+        return { company };
+      });
+
+      newCompany = result.company;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`DB transaction failed for ${session.id}: ${msg}`);
+      return;
+    }
+
+    this.logger.log(
+      `Company created: ${newCompany.id} (${companyName}) — ${email} — ${plan}`,
+    );
+
+    // ── 6. Send emails (non-blocking) ───────────────────────────────────────
+    const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+    const priceMap: Record<string, string> = {
+      starter: '$49 / month',
+      growth:  '$149 / month',
+      fleet:   'Custom',
     };
+
+    await Promise.allSettled([
+      this.emailService.sendWelcomeEmail({
+        to:           email,
+        name:         contactName,
+        companyName,
+        tempPassword,
+        plan,
+      }),
+
+      this.emailService.sendPaymentConfirmationEmail({
+        to:          email,
+        name:        contactName,
+        companyName,
+        plan,
+        amount:      priceMap[plan] ?? planLabel,
+      }),
+
+      this.emailService.sendAdminNotificationEmail({
+        companyName,
+        adminEmail:  email,
+        plan,
+        contactName,
+      }),
+    ]);
+  }
+
+  private async handleSubscriptionChange(
+    sub: StripeSubscriptionLike,
+  ): Promise<void> {
+    const stripeSubscriptionId = sub.id;
+    const company = await this.prisma.company.findUnique({
+      where: { stripeSubscriptionId },
+    });
+
+    if (company) {
+      await this.prisma.company.update({
+        where: { id: company.id },
+        data:  { subscriptionStatus: sub.status },
+      });
+      this.logger.log(
+        `Subscription ${sub.status} for company ${company.id}`,
+      );
+    }
+  }
+
+  private async handleSubscriptionCanceled(
+    sub: StripeSubscriptionLike,
+  ): Promise<void> {
+    const company = await this.prisma.company.findUnique({
+      where: { stripeSubscriptionId: sub.id },
+    });
+
+    if (company) {
+      await this.prisma.company.update({
+        where: { id: company.id },
+        data:  { subscriptionStatus: 'canceled' },
+      });
+      this.logger.warn(`Subscription canceled for company ${company.id}`);
+    }
   }
 }

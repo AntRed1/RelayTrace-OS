@@ -49,3 +49,41 @@ export class ConflictException extends HttpException {
     );
   }
 }
+
+// 402 — plan upgrade required ─────────────────────────────────────────────────
+
+export class FeatureNotAvailableException extends HttpException {
+  constructor(feature: string, currentPlan: string) {
+    super(
+      {
+        statusCode: HttpStatus.PAYMENT_REQUIRED,
+        error: 'plan_upgrade_required',
+        message: `La función "${feature}" no está disponible en el plan ${currentPlan}. Actualiza tu plan para acceder.`,
+        currentPlan,
+        requiredFeature: feature,
+      },
+      HttpStatus.PAYMENT_REQUIRED,
+    );
+  }
+}
+
+export class PlanLimitExceededException extends HttpException {
+  constructor(
+    resource: string,
+    current: number,
+    limit: number,
+    plan: string,
+  ) {
+    super(
+      {
+        statusCode: HttpStatus.PAYMENT_REQUIRED,
+        error: 'plan_limit_exceeded',
+        message: `Límite de ${resource} alcanzado (${current}/${limit}) en el plan ${plan}. Actualiza tu plan para agregar más.`,
+        current,
+        limit,
+        plan,
+      },
+      HttpStatus.PAYMENT_REQUIRED,
+    );
+  }
+}

@@ -93,4 +93,15 @@ export class OnboardCompanyDto {
   @ApiProperty({ example: 'TempPass2026!' })
   @IsString()
   temporaryPassword: string;
+
+  @ApiPropertyOptional({ enum: ['starter', 'growth', 'fleet'], default: 'starter' })
+  @IsOptional()
+  @IsEnum(['starter', 'growth', 'fleet'])
+  plan?: 'starter' | 'growth' | 'fleet';
+}
+
+export class UpdateCompanyPlanDto {
+  @ApiProperty({ enum: ['starter', 'growth', 'fleet'] })
+  @IsEnum(['starter', 'growth', 'fleet'])
+  plan: 'starter' | 'growth' | 'fleet';
 }

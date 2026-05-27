@@ -28,6 +28,8 @@ import {
   useProcessRequest,
   useOnboardCompany,
 } from "@/hooks/use-companies";
+import { PlanBadge } from "@/components/plan/PlanBadge";
+import { PLAN_CONFIG, PlanName } from "@/config/plan.config";
 import { CompanyRequest, CompanyRequestStatus } from "@/types";
 import { safeFormat } from "@/lib/utils";
 
@@ -41,6 +43,7 @@ const onboardSchema = z.object({
     .min(8, "At least 8 characters")
     .regex(/[A-Z]/, "Must include an uppercase letter")
     .regex(/[0-9]/, "Must include a number"),
+  plan: z.enum(["starter", "growth", "fleet"]).optional(),
 });
 type OnboardForm = z.infer<typeof onboardSchema>;
 
@@ -92,7 +95,15 @@ function OnboardModal({ request, onClose }: OnboardModalProps) {
   } = useForm<OnboardForm>({ resolver: zodResolver(onboardSchema) });
 
   const onSubmit = async (form: OnboardForm) => {
-    const result = await mutateAsync({ id: request.id, dto: form });
+    const result = await mutateAsync({
+      id: request.id,
+      dto: {
+        adminEmail:        form.adminEmail,
+        adminName:         form.adminName,
+        temporaryPassword: form.temporaryPassword,
+        plan:              (form.plan ?? "starter") as PlanName,
+      },
+    });
     setDone({ company: result.company.name, adminEmail: result.admin.email });
   };
 
@@ -264,6 +275,45 @@ function OnboardModal({ request, onClose }: OnboardModalProps) {
                   <p className="text-xs text-slate-400 mt-1">
                     The admin must change this on first login.
                   </p>
+                </div>
+
+                {/* Plan selector */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-2">
+                    Plan de acceso
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.keys(PLAN_CONFIG) as PlanName[]).map((p) => {
+                      const cfg = PLAN_CONFIG[p];
+                      const field = "plan" as const;
+                      return (
+                        <label
+                          key={p}
+                          className="cursor-pointer p-2.5 rounded-xl border text-center transition-all"
+                          style={{
+                            borderColor: "#e2e8f0",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            {...register("plan")}
+                            value={p}
+                            className="sr-only"
+                          />
+                          <PlanBadge plan={p} />
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            {cfg.price}
+                            {cfg.period && ` ${cfg.period}`}
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {cfg.maxDrivers === 0
+                              ? "Ilimitado"
+                              : `≤ ${cfg.maxDrivers} conductores`}
+                          </p>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <button

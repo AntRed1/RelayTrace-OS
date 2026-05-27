@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
 import { AuthModule } from '../auth/auth.module';
+import { PlanModule } from '../plan/plan.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, PlanModule],
   controllers: [CompaniesController],
   providers: [CompaniesService],
   exports: [CompaniesService],

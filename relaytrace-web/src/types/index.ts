@@ -31,8 +31,20 @@ export interface Company {
   name: string;
   email: string;
   subscriptionStatus: string;
+  plan: string;         // 'starter' | 'growth' | 'fleet'
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PlanInfo {
+  plan: string;
+  displayName: string;
+  price: string;
+  period: string;
+  maxDrivers: number | null;          // null = unlimited (fleet)
+  currentDrivers: number;
+  driverSlotsRemaining: number | null; // null = unlimited
+  features: string[];
 }
 
 export type CompanyRequestStatus = "pending" | "approved" | "rejected";

@@ -5,7 +5,8 @@ import { TopBar } from "@/components/layouts/TopBar";
 import { useEmployees } from "@/hooks/use-users";
 import { useAllCompanies } from "@/hooks/use-companies";
 import { useAuthStore } from "@/stores/auth.store";
-import { Loader2, Building2 } from "lucide-react";
+import { Loader2, Building2, Users } from "lucide-react";
+import { usePlanInfo } from "@/hooks/use-companies";
 import { safeFormat } from "@/lib/utils";
 import { EmployeeRole } from "@/services/users.service";
 
@@ -39,8 +40,10 @@ export default function DriversPage() {
   const [role, setRole] = useState<EmployeeRole | "">("");
   const [companyId, setCompanyId] = useState("");
 
-  const user = useAuthStore((s) => s.user);
+  const user         = useAuthStore((s) => s.user);
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+
+  const { data: planInfo } = usePlanInfo(!isSuperAdmin);
 
   const { data: companies } = useAllCompanies(isSuperAdmin);
 
@@ -116,6 +119,20 @@ export default function DriversPage() {
             ))}
           </div>
         </div>
+
+        {/* Driver usage chip (COMPANY_ADMIN) */}
+        {!isSuperAdmin && planInfo && planInfo.maxDrivers !== null && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium"
+            style={{
+              background: planInfo.currentDrivers >= planInfo.maxDrivers ? "#fef2f2" : "#f0fdf4",
+              color:      planInfo.currentDrivers >= planInfo.maxDrivers ? "#dc2626" : "#16a34a",
+              border: `1px solid ${planInfo.currentDrivers >= planInfo.maxDrivers ? "#fecaca" : "#bbf7d0"}`,
+            }}>
+            <Users size={13} />
+            {planInfo.currentDrivers} / {planInfo.maxDrivers} conductores activos
+            {planInfo.currentDrivers >= planInfo.maxDrivers && " · Límite alcanzado"}
+          </div>
+        )}
 
         {/* Chip de empresa seleccionada */}
         {isSuperAdmin && selectedCompanyName && (

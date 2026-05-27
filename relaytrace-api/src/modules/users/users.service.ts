@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
+import { PlanService } from '../plan/plan.service';
 import { CreateUserDto, UpdateUserDto } from './dto/users.dtos';
 import {
   ResourceNotFoundException,
@@ -13,16 +14,37 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private authService: AuthService,
+    private planService: PlanService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
     const existing = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
-
     if (existing) {
       throw new ConflictException('User email already exists');
     }
+
+    // ── Plan enforcement ──────────────────────────────────────────────────
+    // Look up the role name to decide which limits to check
+    const role = await this.prisma.role.findUnique({
+      where: { id: createUserDto.roleId },
+      select: { name: true },
+    });
+
+    if (role?.name === 'DRIVER') {
+      // Check driver slot limit for the target company
+      await this.planService.assertDriverLimit(createUserDto.companyId);
+    }
+
+    if (role?.name === 'DISPATCHER') {
+      // Dispatcher role is a Growth+ feature
+      await this.planService.assertFeature(
+        createUserDto.companyId,
+        'dispatcher_role',
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     const passwordHash = await this.authService.hashPassword(
       createUserDto.password,
@@ -30,10 +52,7 @@ export class UsersService {
     const { password, ...rest } = createUserDto;
 
     return this.prisma.user.create({
-      data: {
-        ...rest,
-        passwordHash,
-      },
+      data: { ...rest, passwordHash },
       include: { role: true, company: true },
     });
   }
@@ -44,7 +63,6 @@ export class UsersService {
       include: { role: true, company: true },
     });
 
-    // companyId=null solo para SUPER_ADMIN → puede ver cualquier user
     if (!user || (companyId && user.companyId !== companyId)) {
       throw new ResourceNotFoundException('User', id);
     }
@@ -99,7 +117,6 @@ export class UsersService {
 
   async update(id: string, companyId: string | null, updateUserDto: UpdateUserDto) {
     await this.findById(id, companyId);
-
     return this.prisma.user.update({
       where: { id },
       data: updateUserDto,
@@ -109,9 +126,6 @@ export class UsersService {
 
   async delete(id: string, companyId: string | null) {
     await this.findById(id, companyId);
-
-    return this.prisma.user.delete({
-      where: { id },
-    });
+    return this.prisma.user.delete({ where: { id } });
   }
 }

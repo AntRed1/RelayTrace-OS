@@ -105,6 +105,7 @@ export class CompaniesService {
     adminEmail: string,
     adminName: string,
     passwordHash: string,
+    plan?: string,
   ) {
     const request = await this.findRequest(requestId);
 
@@ -134,6 +135,7 @@ export class CompaniesService {
           name: request.companyName,
           email: request.email,
           subscriptionStatus: 'active',
+          plan: plan ?? 'starter',
         },
       }),
     ]);

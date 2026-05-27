@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // ─── Rutas públicas (sin autenticación requerida) ─────────────────────────────
-const PUBLIC_ROUTES = ["/", "/auth/login", "/auth/register"];
+// /onboarding is the post-payment flow (success/cancel pages) — must be public
+const PUBLIC_ROUTES = ["/", "/auth/login", "/auth/register", "/onboarding"];
 
 // ─── Prefijos permitidos por rol ──────────────────────────────────────────────
 const ROLE_PREFIXES: Record<string, string[]> = {

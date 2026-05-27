@@ -1,7 +1,9 @@
 import { Check } from "lucide-react";
+import { PlanName } from "@/config/plan.config";
 
 interface Plan {
   name: string;
+  planKey: PlanName;
   price: string;
   period: string;
   description: string;
@@ -14,6 +16,7 @@ interface Plan {
 const PLANS: Plan[] = [
   {
     name: "Starter",
+    planKey: "starter",
     price: "$49",
     period: "/ month",
     description: "Perfect for small carriers just getting started.",
@@ -25,11 +28,12 @@ const PLANS: Plan[] = [
       "Basic audit trail",
       "Email support",
     ],
-    cta: "Request Access",
+    cta: "Get Started",
     highlight: false,
   },
   {
     name: "Growth",
+    planKey: "growth",
     price: "$149",
     period: "/ month",
     description: "For growing operations that need automation.",
@@ -42,11 +46,12 @@ const PLANS: Plan[] = [
       "Dispatcher role",
       "Priority support",
     ],
-    cta: "Request Access",
+    cta: "Get Started",
     highlight: true,
   },
   {
     name: "Fleet",
+    planKey: "fleet",
     price: "Custom",
     period: "",
     description: "For large fleets with enterprise requirements.",
@@ -59,16 +64,16 @@ const PLANS: Plan[] = [
       "Dedicated onboarding",
       "White-label option",
     ],
-    cta: "Contact Us",
+    cta: "Contact Sales",
     highlight: false,
   },
 ];
 
 interface Props {
-  onRequestAccess: () => void;
+  onSelectPlan: (plan: PlanName) => void;
 }
 
-export function PricingSection({ onRequestAccess }: Props) {
+export function PricingSection({ onSelectPlan }: Props) {
   return (
     <section id="pricing" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
@@ -186,7 +191,7 @@ export function PricingSection({ onRequestAccess }: Props) {
 
               {/* CTA */}
               <button
-                onClick={onRequestAccess}
+                onClick={() => onSelectPlan(plan.planKey)}
                 className="w-full py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
                 style={
                   plan.highlight
@@ -208,8 +213,7 @@ export function PricingSection({ onRequestAccess }: Props) {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-10">
-          All plans include a 14-day free trial · No credit card required to
-          request access
+          All plans include a 14-day free trial · Secure payments via Stripe
         </p>
       </div>
     </section>

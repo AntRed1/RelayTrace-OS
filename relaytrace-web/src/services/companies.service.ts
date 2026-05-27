@@ -4,7 +4,9 @@ import {
   Company,
   CompanyRequest,
   CompanyRequestStatus,
+  PlanInfo,
 } from "@/types";
+import { PlanName } from "@/config/plan.config";
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -17,6 +19,7 @@ export interface OnboardCompanyDto {
   adminEmail: string;
   adminName: string;
   temporaryPassword: string;
+  plan?: PlanName;
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
@@ -31,6 +34,19 @@ export const companiesService = {
 
   async getMyCompany(): Promise<Company> {
     const { data } = await apiClient.get<ApiResponse<Company>>("/companies/me");
+    return data.data;
+  },
+
+  async getMyPlanInfo(): Promise<PlanInfo> {
+    const { data } = await apiClient.get<ApiResponse<PlanInfo>>("/companies/me/plan");
+    return data.data;
+  },
+
+  async updateCompanyPlan(companyId: string, plan: PlanName): Promise<PlanInfo> {
+    const { data } = await apiClient.patch<ApiResponse<PlanInfo>>(
+      `/companies/${companyId}/plan`,
+      { plan },
+    );
     return data.data;
   },
 
