@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { API_DOCS_URL, ROUTES } from "@/config/constants";
 import { ExternalLink } from "lucide-react";
@@ -35,18 +36,16 @@ export function LandingFooter() {
 
           {/* Brand */}
           <div className="space-y-4">
-            {/* Text logo — no broken image */}
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
-              >
-                <span className="text-white font-bold text-sm">R</span>
-              </div>
-              <span className="text-white font-semibold text-lg">
-                Relay<span style={{ color: "#22d3ee" }}>Trace</span>
-              </span>
-            </div>
+            {/* Logo — dark background version */}
+            <Link href="/" className="inline-block">
+              <Image
+                src="/images/logo-dark-full.png"
+                alt="RelayTrace OS"
+                width={160}
+                height={40}
+                className="h-9 w-auto object-contain"
+              />
+            </Link>
             <p className="text-sm leading-relaxed" style={{ color: "#64748b" }}>
               Operational traceability platform for carriers using Amazon Relay.
             </p>

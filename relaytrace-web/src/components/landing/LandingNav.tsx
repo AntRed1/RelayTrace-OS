@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { ROUTES } from "@/config/constants";
@@ -37,29 +38,19 @@ export function LandingNav({ onRequestAccess }: Props) {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo — text fallback since images may not exist */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span
-            className="text-lg font-black tracking-tight"
-            style={{
-              background: scrolled
-                ? "linear-gradient(135deg,#2563eb,#7c3aed)"
-                : "linear-gradient(135deg,#22d3ee,#60a5fa)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            RelayTrace
-          </span>
-          <span
-            className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-            style={{
-              background: scrolled ? "#eff6ff" : "rgba(34,211,238,0.15)",
-              color: scrolled ? "#2563eb" : "#22d3ee",
-            }}
-          >
-            OS
-          </span>
+        {/* Logo */}
+        <Link href="/" className="flex items-center shrink-0">
+          <Image
+            src={scrolled
+              ? "/images/logo-horizontal.png"
+              : "/images/logo-dark-full.png"
+            }
+            alt="RelayTrace OS"
+            width={160}
+            height={40}
+            className="h-9 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}

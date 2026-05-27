@@ -37,11 +37,11 @@ Start-Sleep -Seconds 2
 
 # ── 3. Stripe webhook listener ────────────────────────────────────────────────
 Write-Host "  [3/3] Starting Stripe webhook listener..." -ForegroundColor Yellow
-Write-Host "        Forwarding: Stripe → localhost:3000/billing/webhook" -ForegroundColor DarkGray
+Write-Host "        Forwarding: Stripe → localhost:3000/api/v1/billing/webhook" -ForegroundColor DarkGray
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "Write-Host '[STRIPE] Webhook listener starting...' -ForegroundColor Magenta; & '$stripe' listen --forward-to localhost:3000/billing/webhook"
+    "Write-Host '[STRIPE] Webhook listener starting...' -ForegroundColor Magenta; & '$stripe' listen --forward-to localhost:3000/api/v1/billing/webhook"
 ) -WindowStyle Normal
 
 Write-Host ""
@@ -49,7 +49,7 @@ Write-Host "  ✓ All processes launched in separate windows." -ForegroundColor 
 Write-Host ""
 Write-Host "  URLs:" -ForegroundColor White
 Write-Host "    API         →  http://localhost:3000" -ForegroundColor DarkGray
-Write-Host "    API Docs    →  http://localhost:3000/api" -ForegroundColor DarkGray
+Write-Host "    API Docs    →  http://localhost:3000/api/docs" -ForegroundColor DarkGray
 Write-Host "    Frontend    →  http://localhost:3001" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  Stripe test cards:" -ForegroundColor White
