@@ -37,8 +37,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Otras rutas públicas (login, register)
+  // 2. Otras rutas públicas (login, register, onboarding)
   if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
+    return NextResponse.next();
+  }
+
+  // 2b. Rutas /api/* — son del backend (Swagger, webhooks, health).
+  //     No aplicar autenticación frontend a estas rutas.
+  if (pathname.startsWith("/api")) {
     return NextResponse.next();
   }
 

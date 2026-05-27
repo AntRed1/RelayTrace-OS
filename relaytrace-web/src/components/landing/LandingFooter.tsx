@@ -1,24 +1,28 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ROUTES } from "@/config/constants";
+import { API_DOCS_URL, ROUTES } from "@/config/constants";
+import { ExternalLink } from "lucide-react";
+
+// ─── Navigation groups ────────────────────────────────────────────────────────
 
 const LINKS = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "How it works", href: "#workflow" },
-    { label: "Pricing", href: "#pricing" },
+    { label: "Features",     href: "#features",  external: false },
+    { label: "How it works", href: "#workflow",  external: false },
+    { label: "Pricing",      href: "#pricing",   external: false },
   ],
   Platform: [
-    { label: "Driver PWA", href: "#" },
-    { label: "Admin Dashboard", href: "#" },
-    { label: "API Docs", href: "http://localhost:3000/api/docs" },
+    { label: "Driver PWA",       href: "#features",  external: false },
+    { label: "Admin Dashboard",  href: ROUTES.AUTH.LOGIN, external: false },
+    { label: "API Docs",         href: API_DOCS_URL, external: true  },
   ],
   Company: [
-    { label: "Sign In", href: ROUTES.AUTH.LOGIN },
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
+    { label: "Sign In",         href: ROUTES.AUTH.LOGIN, external: false },
+    { label: "Privacy Policy",  href: "#",               external: false },
+    { label: "Terms of Service",href: "#",               external: false },
   ],
 };
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function LandingFooter() {
   return (
@@ -28,15 +32,21 @@ export function LandingFooter() {
     >
       <div className="max-w-7xl mx-auto px-6 py-14">
         <div className="grid md:grid-cols-4 gap-10">
+
           {/* Brand */}
           <div className="space-y-4">
-            <Image
-              src="/images/logo-dark-full.png"
-              alt="RelayTrace OS"
-              width={150}
-              height={34}
-              className="h-8 w-auto object-contain"
-            />
+            {/* Text logo — no broken image */}
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
+              >
+                <span className="text-white font-bold text-sm">R</span>
+              </div>
+              <span className="text-white font-semibold text-lg">
+                Relay<span style={{ color: "#22d3ee" }}>Trace</span>
+              </span>
+            </div>
             <p className="text-sm leading-relaxed" style={{ color: "#64748b" }}>
               Operational traceability platform for carriers using Amazon Relay.
             </p>
@@ -55,15 +65,28 @@ export function LandingFooter() {
                 {group}
               </h4>
               <ul className="space-y-2.5">
-                {items.map(({ label, href }) => (
+                {items.map(({ label, href, external }) => (
                   <li key={label}>
-                    <Link
-                      href={href}
-                      className="text-sm transition-colors hover:text-slate-300"
-                      style={{ color: "#64748b" }}
-                    >
-                      {label}
-                    </Link>
+                    {external ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm transition-colors hover:text-slate-300"
+                        style={{ color: "#64748b" }}
+                      >
+                        {label}
+                        <ExternalLink size={10} className="opacity-60" />
+                      </a>
+                    ) : (
+                      <Link
+                        href={href}
+                        className="text-sm transition-colors hover:text-slate-300"
+                        style={{ color: "#64748b" }}
+                      >
+                        {label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

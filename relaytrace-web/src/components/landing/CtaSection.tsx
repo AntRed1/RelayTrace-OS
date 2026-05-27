@@ -55,6 +55,10 @@ export function CtaSection({ onRequestAccess }: Props) {
           className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full opacity-10 blur-3xl pointer-events-none"
           style={{ background: "radial-gradient(circle,#22d3ee,transparent)" }}
         />
+        <div
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full opacity-5 blur-3xl pointer-events-none"
+          style={{ background: "radial-gradient(circle,#818cf8,#2563eb)" }}
+        />
 
         <div className="relative max-w-3xl mx-auto px-6 text-center space-y-6">
           <h2 className="text-4xl md:text-5xl font-extrabold text-white leading-tight">
@@ -65,22 +69,44 @@ export function CtaSection({ onRequestAccess }: Props) {
             Setup takes less than 24 hours.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-2">
+            {/* Primary CTA — shimmer + glow + scale */}
             <button
               onClick={onRequestAccess}
-              className="flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+              className="group relative flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-sm font-bold text-white overflow-hidden transition-all duration-200 hover:scale-[1.04] hover:shadow-[0_0_40px_rgba(37,99,235,0.6)] active:scale-[0.97]"
               style={{
                 background: "linear-gradient(135deg,#22d3ee,#2563eb)",
-                boxShadow: "0 0 30px rgba(37,99,235,0.4)",
+                boxShadow: "0 0 28px rgba(37,99,235,0.4)",
               }}
             >
-              Request Access — Free Trial
-              <ArrowRight size={15} />
+              {/* Shimmer sweep */}
+              <span
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.18) 50%,transparent 70%)",
+                  backgroundSize: "200% 100%",
+                  animation: "shimmer 1.5s infinite",
+                }}
+              />
+              Get Started Free — No credit card
+              <ArrowRight
+                size={15}
+                className="transition-transform duration-200 group-hover:translate-x-0.5"
+              />
             </button>
           </div>
           <p className="text-xs" style={{ color: "#475569" }}>
-            No credit card · 14-day free trial · Cancel anytime
+            14-day free trial · Cancel anytime · Secure payments via Stripe
           </p>
         </div>
+
+        {/* Shimmer keyframe */}
+        <style>{`
+          @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position:  200% 0; }
+          }
+        `}</style>
       </section>
     </>
   );

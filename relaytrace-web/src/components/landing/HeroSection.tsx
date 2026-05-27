@@ -8,9 +8,9 @@ interface Props {
 }
 
 const TRUST_ITEMS = [
-  { icon: Zap, text: "< 5 sec per trip" },
-  { icon: ShieldCheck, text: "Anti-fraud built-in" },
-  { icon: BarChart3, text: "Real-time dashboard" },
+  { icon: Zap,          text: "< 5 sec per trip"     },
+  { icon: ShieldCheck,  text: "Anti-fraud built-in"  },
+  { icon: BarChart3,    text: "Real-time dashboard"  },
 ];
 
 export function HeroSection({ onRequestAccess }: Props) {
@@ -29,18 +29,28 @@ export function HeroSection({ onRequestAccess }: Props) {
         }}
       />
 
-      {/* Glow */}
+      {/* Glow blobs */}
       <div
         className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-10 blur-3xl pointer-events-none"
         style={{ background: "radial-gradient(circle,#22d3ee,#2563eb)" }}
       />
+      <div
+        className="absolute bottom-0 -left-40 w-[400px] h-[400px] rounded-full opacity-5 blur-3xl pointer-events-none"
+        style={{ background: "radial-gradient(circle,#818cf8,#2563eb)" }}
+      />
 
       <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-20 grid lg:grid-cols-2 gap-16 items-center w-full">
-        {/* Copy */}
+        {/* ── Copy ──────────────────────────────────────────────────────────── */}
         <div className="space-y-8">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold"
-            style={{ borderColor: "rgba(34,211,238,0.3)", color: "#22d3ee", background: "rgba(34,211,238,0.08)" }}>
+          {/* Eyebrow pill */}
+          <div
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold"
+            style={{
+              borderColor: "rgba(34,211,238,0.3)",
+              color: "#22d3ee",
+              background: "rgba(34,211,238,0.08)",
+            }}
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
             Built for Amazon Relay carriers
           </div>
@@ -51,7 +61,8 @@ export function HeroSection({ onRequestAccess }: Props) {
             <br />
             <span
               style={{
-                background: "linear-gradient(135deg,#22d3ee 0%,#60a5fa 60%,#818cf8 100%)",
+                background:
+                  "linear-gradient(135deg,#22d3ee 0%,#60a5fa 60%,#818cf8 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -62,7 +73,7 @@ export function HeroSection({ onRequestAccess }: Props) {
             <span className="text-white">for Amazon Relay</span>
           </h1>
 
-          {/* Subtext */}
+          {/* Sub-text */}
           <p className="text-lg leading-relaxed max-w-xl" style={{ color: "#94a3b8" }}>
             Replace WhatsApp screenshots and manual spreadsheets with{" "}
             <span className="text-slate-300">structured trip traceability</span>,
@@ -86,33 +97,58 @@ export function HeroSection({ onRequestAccess }: Props) {
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            {/* Primary CTA — vibrant with glow + scale */}
             <button
               onClick={onRequestAccess}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+              className="group relative flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-bold text-white overflow-hidden transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_32px_rgba(37,99,235,0.55)] active:scale-[0.97]"
               style={{
                 background: "linear-gradient(135deg,#22d3ee,#2563eb)",
                 boxShadow: "0 0 24px rgba(37,99,235,0.4)",
               }}
             >
-              Request Access
-              <ArrowRight size={15} />
+              {/* Shimmer overlay */}
+              <span
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.15) 50%,transparent 70%)",
+                  backgroundSize: "200% 100%",
+                  animation: "shimmer 1.5s infinite",
+                }}
+              />
+              Get Started Free
+              <ArrowRight
+                size={16}
+                className="transition-transform duration-200 group-hover:translate-x-0.5"
+              />
             </button>
+
+            {/* Secondary CTA */}
             <Link
               href={ROUTES.AUTH.LOGIN}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-white/10"
-              style={{ color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)" }}
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.97]"
+              style={{
+                color: "#e2e8f0",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
             >
-              Sign In
+              Sign In →
             </Link>
           </div>
+
+          {/* Social proof */}
+          <p className="text-xs" style={{ color: "#475569" }}>
+            🔒 Secure · No credit card required for trial · Cancel anytime
+          </p>
         </div>
 
-        {/* App mockup */}
+        {/* ── App mockup ────────────────────────────────────────────────────── */}
         <div className="hidden lg:flex justify-center items-center">
           <div
-            className="relative rounded-3xl overflow-hidden"
+            className="relative rounded-3xl overflow-hidden transition-transform duration-700 hover:scale-[1.02]"
             style={{
-              boxShadow: "0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)",
+              boxShadow:
+                "0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)",
             }}
           >
             <Image
@@ -123,16 +159,30 @@ export function HeroSection({ onRequestAccess }: Props) {
               className="w-full h-auto object-cover"
               priority
             />
-            {/* Overlay shimmer */}
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ background: "linear-gradient(180deg,transparent 60%,rgba(15,23,42,0.6) 100%)" }} />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(180deg,transparent 60%,rgba(15,23,42,0.6) 100%)",
+              }}
+            />
           </div>
         </div>
       </div>
 
-      {/* Bottom fade */}
-      <div className="absolute bottom-0 inset-x-0 h-20 pointer-events-none"
-        style={{ background: "linear-gradient(transparent,#f8fafc)" }} />
+      {/* Bottom fade to white */}
+      <div
+        className="absolute bottom-0 inset-x-0 h-24 pointer-events-none"
+        style={{ background: "linear-gradient(transparent,#f8fafc)" }}
+      />
+
+      {/* Shimmer keyframe */}
+      <style>{`
+        @keyframes shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+      `}</style>
     </section>
   );
 }

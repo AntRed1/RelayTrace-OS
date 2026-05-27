@@ -52,11 +52,11 @@ export class PreRegistrationCheckoutDto {
   plan: 'starter' | 'growth' | 'fleet';
 
   @ApiProperty({ example: 'https://app.relaytrace.com/onboarding/success' })
-  @IsUrl()
+  @IsUrl({ require_tld: false })   // require_tld:false allows localhost in dev
   successUrl: string;
 
   @ApiProperty({ example: 'https://app.relaytrace.com/onboarding/cancel' })
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   cancelUrl: string;
 }
 

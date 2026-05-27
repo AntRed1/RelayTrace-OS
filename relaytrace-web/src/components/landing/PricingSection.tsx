@@ -98,14 +98,14 @@ export function PricingSection({ onSelectPlan }: Props) {
           {PLANS.map((plan) => (
             <div
               key={plan.name}
-              className="rounded-2xl p-8 border transition-all"
+              className="rounded-2xl p-8 border transition-all duration-300 hover:-translate-y-1"
               style={
                 plan.highlight
                   ? {
                       background: "linear-gradient(160deg,#0f172a,#1e293b)",
                       borderColor: "rgba(34,211,238,0.3)",
                       boxShadow: "0 20px 60px rgba(37,99,235,0.25)",
-                      transform: "scale(1.03)",
+                      transform: "scale(1.03) translateY(0)",
                     }
                   : {
                       background: "#ffffff",
@@ -190,24 +190,39 @@ export function PricingSection({ onSelectPlan }: Props) {
               </ul>
 
               {/* CTA */}
-              <button
-                onClick={() => onSelectPlan(plan.planKey)}
-                className="w-full py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                style={
-                  plan.highlight
-                    ? {
-                        background: "linear-gradient(135deg,#22d3ee,#2563eb)",
-                        color: "#fff",
-                      }
-                    : {
-                        background: "#f1f5f9",
-                        color: "#334155",
-                        border: "1px solid #e2e8f0",
-                      }
-                }
-              >
-                {plan.cta}
-              </button>
+              {plan.highlight ? (
+                <button
+                  onClick={() => onSelectPlan(plan.planKey)}
+                  className="group relative w-full py-3 rounded-xl text-sm font-bold text-white overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_28px_rgba(37,99,235,0.55)] active:scale-[0.98]"
+                  style={{
+                    background: "linear-gradient(135deg,#22d3ee,#2563eb)",
+                    boxShadow: "0 0 20px rgba(37,99,235,0.35)",
+                  }}
+                >
+                  <span
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.18) 50%,transparent 70%)",
+                      backgroundSize: "200% 100%",
+                      animation: "plan-shimmer 1.5s infinite",
+                    }}
+                  />
+                  <span className="relative">{plan.cta}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onSelectPlan(plan.planKey)}
+                  className="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:bg-slate-200 hover:border-slate-300 active:scale-[0.98]"
+                  style={{
+                    background: "#f1f5f9",
+                    color: "#334155",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  {plan.cta}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -216,6 +231,14 @@ export function PricingSection({ onSelectPlan }: Props) {
           All plans include a 14-day free trial · Secure payments via Stripe
         </p>
       </div>
+
+      {/* Shimmer keyframe */}
+      <style>{`
+        @keyframes plan-shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+      `}</style>
     </section>
   );
 }

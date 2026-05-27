@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { ROUTES } from "@/config/constants";
@@ -38,16 +37,29 @@ export function LandingNav({ onRequestAccess }: Props) {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Image
-            src={scrolled ? "/images/logo-horizontal.png" : "/images/logo-dark-full.png"}
-            alt="RelayTrace OS"
-            width={160}
-            height={36}
-            className="h-8 w-auto object-contain"
-            priority
-          />
+        {/* Logo — text fallback since images may not exist */}
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <span
+            className="text-lg font-black tracking-tight"
+            style={{
+              background: scrolled
+                ? "linear-gradient(135deg,#2563eb,#7c3aed)"
+                : "linear-gradient(135deg,#22d3ee,#60a5fa)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            RelayTrace
+          </span>
+          <span
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+            style={{
+              background: scrolled ? "#eff6ff" : "rgba(34,211,238,0.15)",
+              color: scrolled ? "#2563eb" : "#22d3ee",
+            }}
+          >
+            OS
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -56,7 +68,7 @@ export function LandingNav({ onRequestAccess }: Props) {
             <a
               key={href}
               href={href}
-              className="text-sm font-medium transition-colors"
+              className="text-sm font-medium transition-colors hover:text-blue-400"
               style={{ color: scrolled ? "#475569" : "#cbd5e1" }}
             >
               {label}
@@ -68,7 +80,7 @@ export function LandingNav({ onRequestAccess }: Props) {
         <div className="hidden md:flex items-center gap-3">
           <Link
             href={ROUTES.AUTH.LOGIN}
-            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:bg-white/10"
             style={{
               color: scrolled ? "#2563eb" : "#e2e8f0",
               border: scrolled ? "1px solid #dbeafe" : "1px solid rgba(255,255,255,0.2)",
@@ -76,12 +88,26 @@ export function LandingNav({ onRequestAccess }: Props) {
           >
             Sign In
           </Link>
+          {/* Nav CTA — shimmer + scale on hover */}
           <button
             onClick={onRequestAccess}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
+            className="group relative px-4 py-2 rounded-xl text-sm font-bold text-white overflow-hidden transition-all duration-200 hover:scale-[1.04] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg,#22d3ee,#2563eb)",
+              boxShadow: "0 0 14px rgba(37,99,235,0.3)",
+            }}
           >
-            Request Access
+            {/* Shimmer sweep */}
+            <span
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.2) 50%,transparent 70%)",
+                backgroundSize: "200% 100%",
+                animation: "nav-shimmer 1.5s infinite",
+              }}
+            />
+            <span className="relative">Get Started</span>
           </button>
         </div>
 
@@ -111,20 +137,28 @@ export function LandingNav({ onRequestAccess }: Props) {
           <div className="pt-2 flex flex-col gap-2">
             <Link
               href={ROUTES.AUTH.LOGIN}
-              className="w-full text-center py-2.5 rounded-xl text-sm font-semibold text-blue-600 border border-blue-200"
+              className="w-full text-center py-2.5 rounded-xl text-sm font-semibold text-blue-600 border border-blue-200 transition-all hover:bg-blue-50"
             >
               Sign In
             </Link>
             <button
               onClick={() => { onRequestAccess(); setMobileOpen(false); }}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
+              className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
               style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
             >
-              Request Access
+              Get Started Free
             </button>
           </div>
         </div>
       )}
+
+      {/* Shimmer keyframe */}
+      <style>{`
+        @keyframes nav-shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+      `}</style>
     </header>
   );
 }
