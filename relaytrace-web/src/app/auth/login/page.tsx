@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,16 +44,15 @@ export default function LoginPage() {
       <div className="w-full max-w-sm px-4">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--rt-gradient)" }}
-            >
-              <span className="text-white font-bold text-sm">R</span>
-            </div>
-            <span className="text-xl font-bold text-slate-900">
-              Relay<span className="text-blue-600">Trace</span>
-            </span>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/images/logo-horizontal.png"
+              alt="RelayTrace OS"
+              width={180}
+              height={44}
+              className="h-10 w-auto object-contain"
+              priority
+            />
           </div>
           <p className="text-sm text-slate-500">Sign in to your account</p>
         </div>

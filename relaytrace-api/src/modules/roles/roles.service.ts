@@ -17,6 +17,13 @@ export class RolesService {
     });
   }
 
+  async findAll() {
+    return this.prisma.role.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async seedDefaultRoles() {
     const existingRoles = await this.prisma.role.findMany();
     if (existingRoles.length > 0) return;

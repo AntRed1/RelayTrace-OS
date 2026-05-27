@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -61,23 +62,19 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div
-        className="px-6 py-5 border-b"
+        className="px-5 py-4 border-b flex items-center"
         style={{ borderColor: "var(--border)" }}
       >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, #22d3ee, #2563eb)" }}
-          >
-            <span className="text-white font-bold text-sm">R</span>
-          </div>
-          <span
-            className="font-semibold text-base"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Relay<span style={{ color: "var(--accent)" }}>Trace</span>
-          </span>
-        </div>
+        <Link href="/">
+          <Image
+            src="/images/logo-horizontal.png"
+            alt="RelayTrace OS"
+            width={148}
+            height={36}
+            className="h-8 w-auto object-contain"
+            priority
+          />
+        </Link>
       </div>
 
       {/* Nav */}
