@@ -1,18 +1,18 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
-import { useMyTrips } from "@/hooks/use-trips";
-import { format } from "date-fns";
-import { Loader2, Truck, Plus } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { useAuth }      from "@/hooks/use-auth";
+import { useMyTrips }   from "@/hooks/use-trips";
+import { safeFormat }   from "@/lib/utils";
+import { Loader2, Truck, Plus } from "lucide-react";
 import { ROUTES } from "@/config/constants";
 
-const statusMap: Record<string, { bg: string; color: string; label: string }> =
-  {
-    confirmed: { bg: "#f0fdf4", color: "#16a34a", label: "Confirmed" },
-    pending: { bg: "#fffbeb", color: "#d97706", label: "Pending" },
-    flagged: { bg: "#fef2f2", color: "#dc2626", label: "Flagged" },
-  };
+const STATUS_MAP: Record<string, { bg: string; color: string; dot: string; label: string }> = {
+  confirmed: { bg: "#f0fdf4", color: "#16a34a", dot: "#22c55e", label: "Confirmed" },
+  pending:   { bg: "#fffbeb", color: "#d97706", dot: "#f59e0b", label: "In Transit" },
+  flagged:   { bg: "#fef2f2", color: "#dc2626", dot: "#ef4444", label: "Flagged"   },
+};
 
 export default function DriverDashboardPage() {
   const { user, logout } = useAuth();
@@ -21,19 +21,16 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: "var(--rt-gradient)" }}
-          >
-            <span className="text-white font-bold text-sm">R</span>
-          </div>
-          <span className="font-bold text-slate-900">
-            Relay<span className="text-blue-600">Trace</span>
-          </span>
-        </div>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header className="bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between">
+        <Image
+          src="/images/logo-horizontal.png"
+          alt="RelayTrace OS"
+          width={140}
+          height={36}
+          style={{ width: "auto", height: "32px" }}
+          priority
+        />
         <button
           onClick={logout}
           className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
@@ -48,70 +45,75 @@ export default function DriverDashboardPage() {
           <h1 className="text-lg font-bold text-slate-900">
             Hello, {user?.name?.split(" ")[0]} 👋
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Here are your recent trips
-          </p>
+          <p className="text-sm text-slate-500 mt-0.5">Here are your recent trips</p>
         </div>
 
-        {/* CTA */}
+        {/* Register CTA */}
         <Link
           href={ROUTES.DRIVER.REGISTER_TRIP}
-          className="flex items-center gap-3 p-4 rounded-2xl text-white transition-all"
+          className="flex items-center gap-3 p-4 rounded-2xl text-white transition-all hover:opacity-90 active:scale-[0.99]"
           style={{
-            background: "var(--rt-gradient)",
-            boxShadow: "0 4px 12px rgb(37 99 235 / .3)",
+            background: "linear-gradient(135deg,#22d3ee,#2563eb)",
+            boxShadow: "0 4px 16px rgb(37 99 235 / .35)",
           }}
         >
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <Plus size={20} className="text-white" />
+            <Plus size={20} />
           </div>
           <div>
             <p className="font-semibold text-sm">Register New Trip</p>
-            <p className="text-xs text-white/80 mt-0.5">
-              Tap to add your Amazon Relay trip
-            </p>
+            <p className="text-xs text-white/75 mt-0.5">Tap to add your Amazon Relay trip</p>
           </div>
         </Link>
 
-        {/* Trips */}
+        {/* Trips list */}
         <div
           className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
-          style={{ boxShadow: "var(--rt-shadow-sm)" }}
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
         >
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-800">My Trips</h2>
+            <span className="text-xs text-slate-400">{trips.length} recent</span>
           </div>
 
           {isLoading ? (
             <div className="py-10 flex justify-center">
-              <Loader2 size={20} className="animate-spin text-blue-500" />
+              <Loader2 size={20} className="animate-spin text-blue-400" />
             </div>
           ) : trips.length === 0 ? (
-            <div className="py-10 text-center">
-              <Truck size={28} className="text-slate-300 mx-auto mb-2" />
+            <div className="py-12 text-center space-y-2">
+              <Truck size={28} className="text-slate-200 mx-auto" />
               <p className="text-sm text-slate-400">No trips registered yet</p>
+              <Link
+                href={ROUTES.DRIVER.REGISTER_TRIP}
+                className="inline-block text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Register your first trip →
+              </Link>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">
               {trips.map((trip) => {
-                const s = statusMap[trip.status] ?? statusMap.pending;
+                const s = STATUS_MAP[trip.status] ?? STATUS_MAP.pending;
                 return (
                   <div
                     key={trip.id}
                     className="px-5 py-3.5 flex items-center justify-between"
                   >
                     <div>
-                      <p className="text-sm font-semibold text-slate-800 font-mono">
+                      <p className="text-sm font-semibold text-slate-800 font-mono tracking-tight">
                         {trip.tripId}
                       </p>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {format(new Date(trip.registeredAt), "MMM d · h:mm a")}
+                        {/* safeFormat guards against null / invalid dates */}
+                        {safeFormat(trip.registeredAt, "MMM d · h:mm a")}
                       </p>
                     </div>
                     <span
-                      className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{ background: s.bg, color: s.color }}
                     >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.dot }} />
                       {s.label}
                     </span>
                   </div>

@@ -50,7 +50,7 @@ export default function LoginPage() {
               alt="RelayTrace OS"
               width={220}
               height={56}
-              className="h-14 w-auto object-contain"
+              style={{ width: "auto", height: "56px" }}
               priority
             />
           </div>

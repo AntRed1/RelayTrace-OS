@@ -146,7 +146,7 @@ export function Sidebar() {
                 alt="RelayTrace"
                 width={32}
                 height={32}
-                className="w-8 h-8 object-contain rounded-lg"
+                style={{ width: "32px", height: "32px" }}
               />
             </Link>
           ) : (
@@ -156,7 +156,7 @@ export function Sidebar() {
                 alt="RelayTrace OS"
                 width={160}
                 height={40}
-                className="h-9 w-auto object-contain"
+                style={{ width: "auto", height: "36px" }}
                 priority
               />
             </Link>

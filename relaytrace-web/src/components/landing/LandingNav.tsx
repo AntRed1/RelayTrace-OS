@@ -48,7 +48,7 @@ export function LandingNav({ onRequestAccess }: Props) {
             alt="RelayTrace OS"
             width={160}
             height={40}
-            className="h-9 w-auto object-contain"
+            style={{ width: "auto", height: "36px" }}
             priority
           />
         </Link>

@@ -43,7 +43,7 @@ export function LandingFooter() {
                 alt="RelayTrace OS"
                 width={160}
                 height={40}
-                className="h-9 w-auto object-contain"
+                style={{ width: "auto", height: "36px" }}
               />
             </Link>
             <p className="text-sm leading-relaxed" style={{ color: "#64748b" }}>
