@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logos/logo-dark.png" alt="RelayTrace OS Logo" width="280" />
+<img src="relaytrace-web/public/images/logo-horizontal.png" alt="RelayTrace OS" width="320" />
 
 <br />
 
@@ -10,26 +10,25 @@
 
 <p>
   <img src="https://img.shields.io/badge/NestJS-11.x-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Next.js-15.x-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
   <img src="https://img.shields.io/badge/Prisma-7.x-2D3748?style=for-the-badge&logo=prisma&logoColor=white" />
-  <img src="https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Azure-Cloud-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white" />
 </p>
 
 <p>
+  <img src="https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
   <img src="https://img.shields.io/badge/Redis-BullMQ-DC382D?style=for-the-badge&logo=redis&logoColor=white" />
   <img src="https://img.shields.io/badge/Stripe-Billing-635BFF?style=for-the-badge&logo=stripe&logoColor=white" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" />
+  <img src="https://img.shields.io/badge/Azure-Cloud-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white" />
 </p>
 
 <br />
 
-> **RelayTrace OS** es un SaaS multi-tenant construido sobre Amazon Relay que resuelve el problema crítico de trazabilidad, auditoría y control operacional en flotas de transporte que comparten una sola cuenta de Relay entre múltiples conductores.
+> **RelayTrace OS** es un SaaS multi-tenant que resuelve el problema crítico de trazabilidad, auditoría y control operacional en flotas de transporte que utilizan Amazon Relay, permitiendo a las empresas saber exactamente qué conductor tomó qué viaje, cuándo, y con evidencia fotográfica.
 
 <br />
 
-[📖 Documentación API](http://localhost:3000/api/docs) · [🐛 Reportar Bug](https://github.com/AntRed1/RelayTrace-OS/issues) · [💡 Feature Request](https://github.com/AntRed1/RelayTrace-OS/issues)
+[📖 API Docs](http://localhost:3000/api/docs) · [🐛 Issues](https://github.com/AntRed1/RelayTrace-OS/issues)
 
 </div>
 
@@ -42,15 +41,15 @@
 - [Arquitectura](#-arquitectura)
 - [Stack Tecnológico](#-stack-tecnológico)
 - [Estructura del Repositorio](#-estructura-del-repositorio)
-- [Módulos del Backend](#-módulos-del-backend)
+- [Funcionalidades Implementadas](#-funcionalidades-implementadas)
 - [Roles y Permisos](#-roles-y-permisos)
 - [API Endpoints](#-api-endpoints)
 - [Instalación y Configuración](#-instalación-y-configuración)
 - [Variables de Entorno](#-variables-de-entorno)
 - [Base de Datos](#-base-de-datos)
 - [Seguridad](#-seguridad)
+- [Planes y Billing](#-planes-y-billing)
 - [Roadmap](#-roadmap)
-- [Contribución](#-contribución)
 
 ---
 
@@ -75,9 +74,9 @@ RelayTrace OS actúa como **capa operacional** por encima de Amazon Relay:
 ```
 Conductor toma viaje en Amazon Relay
            ↓
-Conductor registra el Trip ID en RelayTrace OS
+Conductor registra el Trip ID + foto desde su celular
            ↓
-Sistema asocia: conductor + viaje + timestamp + evidencia
+Sistema asocia: conductor + viaje + timestamp + evidencia fotográfica
            ↓
 Empresa obtiene trazabilidad completa, auditoría y detección de fraude
 ```
@@ -93,239 +92,236 @@ Empresa obtiene trazabilidad completa, auditoría y detección de fraude
 │                        Internet                              │
 └─────────────────────────┬───────────────────────────────────┘
                           │
-┌─────────────────────────▼───────────────────────────────────┐
-│                   Azure Front Door                           │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
          ┌────────────────┴────────────────┐
          │                                 │
 ┌────────▼────────┐               ┌────────▼────────┐
 │  Next.js 15     │               │   NestJS API    │
-│  Frontend PWA   │◄──────────────│   relaytrace-   │
-│  relaytrace-web │               │      api        │
-└─────────────────┘               └────────┬────────┘
-                                           │
-              ┌────────────────────────────┼────────────────────┐
-              │                            │                     │
-    ┌─────────▼──────┐          ┌──────────▼──────┐   ┌────────▼───────┐
-    │  Azure MySQL   │          │  Azure Blob     │   │  Redis +       │
-    │  Flexible      │          │  Storage        │   │  BullMQ        │
-    │  Server        │          │  (Screenshots)  │   │  (Queue Jobs)  │
-    └────────────────┘          └─────────────────┘   └────────────────┘
+│  Frontend PWA   │◄──────────────│  relaytrace-api │
+│  relaytrace-web │    REST/JSON  │   :3000         │
+│  :3001          │               └────────┬────────┘
+└─────────────────┘                        │
+                          ┌────────────────┼────────────────┐
+                          │                │                 │
+               ┌──────────▼──────┐  ┌──────▼──────┐  ┌────▼────────────┐
+               │  MySQL 8        │  │  Azure Blob  │  │  Redis + BullMQ │
+               │  (Prisma ORM)   │  │  Storage     │  │  (Queue Jobs)   │
+               └─────────────────┘  └─────────────┘  └─────────────────┘
 ```
 
 ### Arquitectura Multi-Tenant
 
 ```
 SaaS Platform (RelayTrace OS)
-└── Company A
-│   ├── COMPANY_ADMIN
-│   ├── DISPATCHER
-│   └── DRIVERs → Trips → Alerts → AuditLogs
-└── Company B
-    ├── COMPANY_ADMIN
-    └── DRIVERs → Trips → Alerts → AuditLogs
+└── SUPER_ADMIN (sin empresa — acceso global)
+└── Company A (tenant)
+│   ├── COMPANY_ADMIN  → gestiona usuarios, ve todos los viajes
+│   ├── DISPATCHER     → monitoreo en tiempo real
+│   └── DRIVERs        → registran viajes con foto desde el celular
+└── Company B (tenant)
+    └── ...aislamiento total por companyId
 ```
-
-**Regla crítica:** Todas las entidades contienen `company_id` — garantizando aislamiento total entre empresas.
 
 ---
 
 ## 🛠 Stack Tecnológico
+
+### Backend (`relaytrace-api`)
 
 | Capa | Tecnología | Versión |
 |------|-----------|---------|
 | **Framework** | NestJS | 11.x |
 | **Lenguaje** | TypeScript | 5.x |
 | **ORM** | Prisma | 7.x |
-| **Base de Datos** | MySQL | 8.x |
-| **Auth** | JWT + Passport | — |
+| **Base de Datos** | MySQL 8 | — |
+| **Auth** | JWT + Passport (access + refresh tokens) | — |
+| **File Upload** | Multer (diskStorage) | built-in |
 | **Queue** | BullMQ + Redis | — |
-| **Storage** | Azure Blob Storage | — |
-| **OCR** | Azure AI Document Intelligence | — |
+| **Storage** | Azure Blob Storage (OCR, plan Growth+) | — |
+| **OCR** | Azure AI Document Intelligence | plan Growth+ |
 | **Email Parsing** | Microsoft Graph API | — |
-| **Billing** | Stripe | — |
-| **Documentación** | Swagger / OpenAPI | — |
-| **Infraestructura** | Azure Container Apps | — |
-| **CI/CD** | Azure DevOps | — |
-| **Monitoreo** | Azure Monitor + App Insights | — |
+| **Billing** | Stripe Checkout + Webhooks | — |
+| **Documentación** | Swagger / OpenAPI 3 | — |
+| **Rate Limiting** | `@nestjs/throttler` (10/seg, 100/min) | — |
+
+### Frontend (`relaytrace-web`)
+
+| Capa | Tecnología |
+|------|-----------|
+| **Framework** | Next.js 15 (App Router) |
+| **UI** | Tailwind CSS v4 + Lucide Icons |
+| **Estado servidor** | TanStack Query (React Query) |
+| **Estado global** | Zustand (auth store) |
+| **Formularios** | React Hook Form + Zod |
+| **Mapas** | React Leaflet (OpenStreetMap) |
+| **Animaciones** | CSS keyframes + Tailwind transitions |
+| **PWA** | `site.webmanifest` + favicons multi-tamaño |
 
 ---
 
 ## 📁 Estructura del Repositorio
 
 ```
-relaytrace-os/
-│
-├── relaytrace-api/          # Backend NestJS (este repositorio)
+RelayTrace-OS/
+├── relaytrace-api/          # Backend NestJS
 ├── relaytrace-web/          # Frontend Next.js 15 (PWA)
-├── relaytrace-workers/      # Workers BullMQ separados
-├── relaytrace-infra/        # Terraform / Azure Infrastructure
-└── relaytrace-docs/         # Documentación adicional
+├── relaytrace-images/       # Assets de marca (logos, imágenes)
+└── README.md
 ```
 
-### Estructura del Backend (`relaytrace-api`)
+### Backend (`relaytrace-api/src/`)
 
 ```
-src/
-├── common/
-│   ├── decorators/          # @CurrentUser, @Roles
-│   ├── filters/             # HttpExceptionFilter, PrismaExceptionFilter
-│   ├── guards/              # JwtAuthGuard, RolesGuard, CompanyGuard
-│   ├── interceptors/        # ResponseInterceptor, LoggingInterceptor, SanitizeInterceptor
-│   ├── exceptions/          # Custom exceptions
-│   └── types/               # UserRole, JwtPayload, RequestUser
-│
-├── config/
-│   ├── app.config.ts        # Configuración centralizada
-│   └── validation.ts        # Validación de variables de entorno
-│
-├── prisma/
-│   ├── prisma.service.ts    # PrismaService global
-│   └── prisma.module.ts     # PrismaModule (@Global)
-│
-└── modules/
-    ├── auth/                # JWT, login, refresh, estrategia
-    ├── users/               # CRUD usuarios por empresa
-    ├── companies/           # Gestión empresas SaaS
-    ├── roles/               # RBAC + seed de roles
-    ├── drivers/             # Abstracción conductores
-    ├── trips/               # ⭐ Core — registro y trazabilidad
-    ├── uploads/             # Azure Blob Storage presigned URLs
-    ├── audit/               # Trazabilidad interna de acciones
-    ├── dashboard/           # KPIs y métricas
-    ├── billing/             # Stripe subscriptions + webhooks
-    ├── queue/               # BullMQ producers + processors
-    ├── ocr/                 # Azure AI Document Intelligence
-    ├── relay-emails/        # Microsoft Graph API parser
-    ├── reconciliation/      # Motor anti-fraude
-    ├── notifications/       # Sistema de alertas
-    └── health/              # Health checks
+common/
+├── decorators/        # @CurrentUser, @Roles, @RequireFeature
+├── filters/           # HttpExceptionFilter, PrismaExceptionFilter
+├── guards/            # JwtAuthGuard, RolesGuard, CompanyGuard, PlanGuard
+└── interceptors/      # ResponseInterceptor, LoggingInterceptor
+
+modules/
+├── auth/              # Login, refresh, JWT strategy
+├── users/             # CRUD + cambio de contraseña + audit
+├── companies/         # Multi-tenant: empresas SaaS
+├── roles/             # RBAC — lista de roles disponibles
+├── drivers/           # Abstracción conductores + stats
+├── trips/             # ⭐ Core — registro y trazabilidad de viajes
+├── uploads/           # Multer (screenshots) + Azure Blob (OCR Growth+)
+├── audit/             # Log de acciones sensibles
+├── dashboard/         # KPIs: viajes hoy, conductores activos, alertas
+├── billing/           # Stripe Checkout Sessions + Webhook idempotente
+├── queue/             # BullMQ producers + processors
+├── ocr/               # Azure AI Document Intelligence (Growth+)
+├── relay-emails/      # Microsoft Graph API — parser emails Relay
+├── reconciliation/    # Motor anti-fraude
+├── notifications/     # Alertas y emails
+└── health/            # Health checks DB + Redis
+```
+
+### Frontend (`relaytrace-web/src/`)
+
+```
+app/
+├── page.tsx                  # Landing page pública
+├── auth/login/               # Login
+├── admin/
+│   ├── layout.tsx            # SidebarProvider + AdminShell
+│   ├── dashboard/            # Dashboard con mapa + KPIs + tabla
+│   ├── trips/                # Gestión de viajes
+│   ├── drivers/              # People — CRUD completo de usuarios
+│   ├── reconciliation/       # Motor anti-fraude
+│   ├── onboarding/           # Solicitudes de empresa (SUPER_ADMIN)
+│   └── settings/             # Configuración de empresa
+├── dispatcher/dashboard/     # Vista dispatcher
+└── driver/
+    ├── dashboard/            # Dashboard conductor (mis viajes)
+    └── register-trip/        # Registro de viaje con foto
+
+components/
+├── landing/                  # LandingNav, HeroSection, PricingSection,
+│                             #   FeaturesSection, WorkflowSection,
+│                             #   CtaSection, LandingFooter
+├── layouts/                  # Sidebar, TopBar, AdminShell
+├── dashboard/                # StatCard, RecentTripsTable, RelayPointsMap
+└── people/                   # UserFormModal, ChangePasswordModal,
+                              #   DeleteUserModal
+
+contexts/
+└── sidebar.context.tsx       # Estado del sidebar (collapsed + mobile)
+                              #   persistido en localStorage
+
+services/
+├── trips.service.ts
+├── users.service.ts
+└── uploads.service.ts        # Upload screenshot → /uploads/screenshot
 ```
 
 ---
 
-## 📦 Módulos del Backend
+## ✨ Funcionalidades Implementadas
 
-### 🔐 Auth Module
+### 🏠 Landing Page
+- Navegación con scroll: logo/colores adaptativos al hacer scroll
+- Hero animado con shimmer + glow en CTA
+- Sección Features, Workflow, Pricing con animaciones hover
+- Footer con links al API Docs (Swagger), navegación y marca
+- Botón "Get Started" abre modal de solicitud de acceso
+- Totalmente responsive — hamburger menu en móvil
 
-Maneja autenticación JWT con access tokens y refresh tokens. El `companyId` viene **siempre del JWT**, nunca del frontend.
+### 🔐 Autenticación
+- Login con JWT (access token 1h + refresh 7d)
+- Renovación automática de token via interceptor en axios
+- Redirect por rol al login exitoso (`ROLE_ROUTES`)
+- Guards multi-nivel: JWT → Roles → Company → Plan
 
-```typescript
-POST /api/v1/auth/login        → Login + JWT
-POST /api/v1/auth/refresh      → Renovar access token
-GET  /api/v1/auth/me           → Perfil del usuario autenticado
-```
+### 📊 Dashboard Administrativo
+- 4 KPI cards: Trips Today, Active Drivers, Total Trips, Pending Alerts
+- Mapa interactivo (React Leaflet + OpenStreetMap) con rutas y marcadores
+- Tabla de viajes recientes con status badges
+- Columna 2/3 mapa + 1/3 tabla en pantallas grandes
 
-### 🏢 Companies Module
+### 👥 Gestión de Personas (`/admin/drivers`)
+- **Tabs por rol**: All / Drivers / Dispatchers / Admins
+- **Filtro por empresa** (solo SUPER_ADMIN)
+- **Crear usuario**: nombre, email, contraseña (auto-generada + barra de fortaleza), rol, empresa
+- **Editar**: nombre, rol, estado (active/inactive)
+- **Cambiar contraseña**: nueva + confirmación + mostrar/ocultar + barra de fortaleza + registro de auditoría
+- **Revocar / Restaurar** acceso (ShieldOff / ShieldCheck)
+- **Eliminar** con modal de confirmación
+- Todas las acciones dejan log en `AuditLog`
 
-Gestión de empresas SaaS. Cada empresa es un tenant aislado.
+### 📝 Registro de Viaje (Driver PWA)
+- Formulario mobile-first: Trip ID + upload de foto
+- Botón de cámara: abre cámara nativa en móvil (`capture="environment"`)
+- Preview de la imagen seleccionada con barra de progreso
+- Upload a `POST /uploads/screenshot` → imagen guardada en `public/screenshots/`
+- URL guardada junto al viaje para auditoría posterior
 
-```typescript
-POST  /api/v1/companies        → Crear empresa
-GET   /api/v1/companies/me     → Obtener empresa propia
-PATCH /api/v1/companies/me     → Actualizar empresa propia
-```
+### 🪗 Sidebar Colapsable
+- Acordeón lateral: expandido (w-64) / colapsado (w-16)
+- Estado persistido en `localStorage` (`rt_sidebar_collapsed`)
+- Mobile: overlay + slide desde la izquierda (hamburger en TopBar)
+- Tooltips en modo colapsado
+- Badge con contador de solicitudes pendientes (SUPER_ADMIN, Onboarding)
+- Toggle flotante en el borde derecho (desktop)
 
-### 👥 Users Module
+### 💳 Billing — Stripe
+- Checkout Session para planes Starter / Growth / Fleet
+- Webhook `POST /api/v1/billing/webhook` con verificación HMAC
+- Idempotencia via `ProcessedWebhookEvent` (evita doble procesamiento)
+- Al pago exitoso: crea Company + User admin automáticamente
+- `PlanGuard` + `@RequireFeature('ocr')` para funciones Growth+
 
-Gestión de usuarios con aislamiento multi-tenant estricto.
+### 🏢 Onboarding (SUPER_ADMIN)
+- Lista de solicitudes de empresa pendientes / aprobadas / rechazadas
+- Badge en sidebar con contador de pendientes en tiempo real
+- Aprobación crea empresa + envía credenciales al admin
 
-```typescript
-POST   /api/v1/users           → Crear usuario
-GET    /api/v1/users           → Listar usuarios de la empresa
-GET    /api/v1/users/:id       → Obtener usuario
-PATCH  /api/v1/users/:id       → Actualizar usuario
-DELETE /api/v1/users/:id       → Eliminar usuario
-```
+### 📸 Upload de Screenshots
+- `POST /uploads/screenshot` — disponible en todos los planes (JWT only)
+- Multer diskStorage → `public/screenshots/<uuid>.<ext>`
+- ServeStaticModule sirve los archivos en `/screenshots/`
+- `POST /uploads/presigned-url` — solo Growth+ (Azure Blob, para OCR)
 
-### 🚚 Drivers Module
-
-Abstracción específica para conductores con estadísticas operacionales.
-
-```typescript
-GET /api/v1/drivers            → Listar conductores
-GET /api/v1/drivers/:id/stats  → Estadísticas del conductor
-```
-
-### ✈️ Trips Module ⭐ Core
-
-**El núcleo del sistema.** Registro y trazabilidad completa de viajes de Amazon Relay.
-
-```typescript
-POST   /api/v1/trips           → Registrar viaje (DRIVER)
-GET    /api/v1/trips/me        → Mis viajes (DRIVER)
-GET    /api/v1/trips           → Todos los viajes (ADMIN/DISPATCHER)
-GET    /api/v1/trips/:id       → Detalle de viaje
-PATCH  /api/v1/trips/:id       → Actualizar estado
-DELETE /api/v1/trips/:id       → Eliminar viaje
-```
-
-**Estados de un viaje:**
-
-| Estado | Descripción |
-|--------|-------------|
-| `pending` | Recién registrado por el conductor |
-| `confirmed` | Validado por sistema o admin |
-| `flagged` | Sospechoso, requiere revisión |
-
-### 📊 Dashboard Module
-
-KPIs y métricas operacionales en tiempo real.
-
-```typescript
-GET /api/v1/dashboard/summary   → Resumen: viajes hoy, conductores activos, alertas
-GET /api/v1/dashboard/activity  → Actividad reciente
-```
-
-### 🔍 Reconciliation Module
-
-Motor anti-fraude que compara registros de conductores contra emails de Amazon Relay.
-
-```
-Email Relay (fuente de verdad)
-        ↓
-Parser (Microsoft Graph API)
-        ↓
-Comparación con registros conductores
-        ↓
-✅ Match → OK
-❌ No Match → ALERTA (missing_trip / duplicate_trip)
-```
-
-### 💳 Billing Module
-
-Subscripciones SaaS via Stripe.
-
-```typescript
-POST /api/v1/billing/create-checkout  → Generar sesión de pago
-POST /api/v1/billing/webhook          → Webhook Stripe (HMAC verificado)
-```
+### 🔒 Seguridad y Auditoría
+- Cambios de contraseña dejan `AuditLog` con `isSelfChange`, email del objetivo y quien lo cambió
+- `PATCH /users/:id/password` solo disponible a COMPANY_ADMIN y SUPER_ADMIN
+- Aislamiento multi-tenant: COMPANY_ADMIN no puede operar sobre usuarios de otra empresa
 
 ---
 
 ## 👮 Roles y Permisos
 
-| Rol | Descripción | Permisos principales |
-|-----|-------------|---------------------|
-| `SUPER_ADMIN` | Control total del SaaS | Todo — bypass global de guards |
-| `COMPANY_ADMIN` | Administra su empresa | Gestionar usuarios, ver todos los viajes |
+| Rol | Descripción | Acceso principal |
+|-----|-------------|-----------------|
+| `SUPER_ADMIN` | Control total del SaaS | Todo — bypass de guards de empresa |
+| `COMPANY_ADMIN` | Administra su empresa | Usuarios, viajes, settings |
 | `DISPATCHER` | Monitoreo operacional | Ver viajes, conductores, dashboard |
 | `DRIVER` | Conductor | Registrar y ver sus propios viajes |
 
-### SUPER_ADMIN Bypass
-
-`RolesGuard` implementa bypass automático para `SUPER_ADMIN`:
-
 ```typescript
+// RolesGuard — SUPER_ADMIN bypasses everything
 if (user.role === 'SUPER_ADMIN') return true;
-```
 
-### Aislamiento Multi-Tenant
-
-Servicios como `TripsService` aplican filtros automáticos por `companyId`:
-
-```typescript
+// Multi-tenant — companyId viene SIEMPRE del JWT, nunca del body
 if (user.role !== 'SUPER_ADMIN') {
   where.companyId = user.companyId;
 }
@@ -335,41 +331,83 @@ if (user.role !== 'SUPER_ADMIN') {
 
 ## 🌐 API Endpoints
 
-Base URL: `http://localhost:3000/api/v1`
+**Base URL:** `http://localhost:3000/api/v1`  
+**Swagger UI:** `http://localhost:3000/api/docs`
 
-Documentación interactiva: `http://localhost:3000/api/docs`
+Todos los endpoints protegidos requieren `Authorization: Bearer <token>`.
 
 ### Autenticación
 
-Todos los endpoints protegidos requieren:
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/auth/login` | Login → JWT access + refresh |
+| `POST` | `/auth/refresh` | Renovar access token |
+| `GET` | `/auth/me` | Perfil del usuario autenticado |
 
-```
-Authorization: Bearer <access_token>
-```
-
-### Resumen de endpoints
+### Usuarios
 
 | Método | Endpoint | Rol mínimo | Descripción |
 |--------|----------|-----------|-------------|
-| `GET` | `/health` | Público | Estado de la API |
-| `GET` | `/health/db` | Público | Estado de MySQL |
-| `POST` | `/auth/login` | Público | Iniciar sesión |
-| `POST` | `/auth/refresh` | Público | Renovar token |
-| `GET` | `/auth/me` | Autenticado | Perfil propio |
-| `POST` | `/companies` | Autenticado | Crear empresa |
-| `GET` | `/companies/me` | COMPANY_ADMIN | Mi empresa |
 | `POST` | `/users` | COMPANY_ADMIN | Crear usuario |
-| `GET` | `/users` | COMPANY_ADMIN | Listar usuarios |
-| `GET` | `/drivers` | DISPATCHER | Listar conductores |
-| `GET` | `/drivers/:id/stats` | DISPATCHER | Stats conductor |
-| `POST` | `/trips` | DRIVER | Registrar viaje |
-| `GET` | `/trips/me` | DRIVER | Mis viajes |
-| `GET` | `/trips` | DISPATCHER | Todos los viajes |
-| `GET` | `/dashboard/summary` | DISPATCHER | KPIs |
-| `GET` | `/reconciliation` | COMPANY_ADMIN | Reconciliaciones |
-| `GET` | `/reconciliation/summary` | COMPANY_ADMIN | Resumen fraude |
-| `POST` | `/uploads/presigned-url` | Autenticado | URL subida |
-| `POST` | `/billing/create-checkout` | COMPANY_ADMIN | Checkout Stripe |
+| `GET` | `/users` | COMPANY_ADMIN | Listar usuarios (filtros: companyId, rol) |
+| `GET` | `/users/:id` | COMPANY_ADMIN | Obtener usuario |
+| `PATCH` | `/users/:id` | COMPANY_ADMIN | Actualizar nombre/rol/estado |
+| `PATCH` | `/users/:id/password` | COMPANY_ADMIN | Cambiar contraseña + audit log |
+| `DELETE` | `/users/:id` | COMPANY_ADMIN | Eliminar usuario |
+
+### Roles
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/roles` | Listar todos los roles disponibles |
+
+### Viajes
+
+| Método | Endpoint | Rol mínimo | Descripción |
+|--------|----------|-----------|-------------|
+| `POST` | `/trips` | DRIVER | Registrar viaje (+ screenshotUrl opcional) |
+| `GET` | `/trips/me` | DRIVER | Mis viajes paginados |
+| `GET` | `/trips` | DISPATCHER | Todos los viajes (filtros: status, driverId) |
+| `GET` | `/trips/:id` | DISPATCHER | Detalle de viaje |
+| `PATCH` | `/trips/:id` | DISPATCHER | Actualizar estado |
+| `DELETE` | `/trips/:id` | COMPANY_ADMIN | Eliminar viaje |
+
+### Dashboard
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/dashboard/summary` | KPIs: viajes hoy, conductores activos, alertas |
+| `GET` | `/dashboard/activity` | Viajes recientes |
+
+### Empresas
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/companies/me` | Obtener empresa propia |
+| `PATCH` | `/companies/me` | Actualizar empresa |
+| `GET` | `/companies/requests` | Solicitudes de onboarding (SUPER_ADMIN) |
+| `PATCH` | `/companies/requests/:id` | Aprobar/rechazar solicitud |
+
+### Uploads
+
+| Método | Endpoint | Rol / Plan | Descripción |
+|--------|----------|-----------|-------------|
+| `POST` | `/uploads/screenshot` | Autenticado (todos) | Subir foto de viaje (multipart, ≤10 MB) → `/screenshots/<uuid>.jpg` |
+| `POST` | `/uploads/presigned-url` | Growth+ | URL pre-firmada para Azure Blob (OCR) |
+
+### Billing
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/billing/create-checkout` | Crear sesión de pago Stripe |
+| `POST` | `/billing/webhook` | Webhook Stripe (HMAC verificado, idempotente) |
+
+### Reconciliación
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/reconciliation` | Lista de reconciliaciones |
+| `GET` | `/reconciliation/summary` | Resumen: matched/unmatched/match rate |
 
 ---
 
@@ -379,288 +417,189 @@ Authorization: Bearer <access_token>
 
 - Node.js 20+
 - MySQL 8+
-- Redis 7+
-- Docker (opcional)
+- Redis 7+ (para BullMQ)
+- Stripe CLI (para desarrollo con webhooks)
 
-### 1. Clonar el repositorio
+### 1. Clonar
 
 ```bash
 git clone https://github.com/AntRed1/RelayTrace-OS.git
-cd RelayTrace-OS/relaytrace-api
+cd RelayTrace-OS
 ```
 
-### 2. Instalar dependencias
+### 2. Backend (`relaytrace-api`)
 
 ```bash
+cd relaytrace-api
 npm install
-```
 
-### 3. Configurar variables de entorno
+# Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con tus valores
 
-```bash
-cp .env.example .env
-# Editar .env con tus valores
-```
-
-### 4. Configurar base de datos
-
-```bash
-# Crear usuario y base de datos en MySQL
-mysql -u root -p
-
-CREATE USER 'relaytrace'@'localhost' IDENTIFIED BY 'tu_password';
-CREATE DATABASE relaytrace CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON relaytrace.* TO 'relaytrace'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-### 5. Correr migraciones y seed
-
-```bash
+# Crear base de datos y correr migraciones
 npx prisma migrate dev
-npx prisma db seed
-```
+npx prisma db seed      # Crea roles y SUPER_ADMIN inicial
 
-### 6. Levantar Redis (Docker)
-
-```bash
+# Redis (Docker)
 docker run -d --name redis -p 6379:6379 redis:7-alpine
-```
 
-### 7. Iniciar en desarrollo
-
-```bash
+# Iniciar en watch mode
 npm run start:dev
 ```
 
-La API estará disponible en:
+> **API disponible en:** `http://localhost:3000/api/v1`  
+> **Swagger:** `http://localhost:3000/api/docs`
 
-- **API:** `http://localhost:3000/api/v1`
-- **Swagger:** `http://localhost:3000/api/docs`
-- **Health:** `http://localhost:3000/api/v1/health`
+### 3. Frontend (`relaytrace-web`)
+
+```bash
+cd relaytrace-web
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env.local
+# Establecer NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+
+# Iniciar
+npm run dev
+```
+
+> **Frontend en:** `http://localhost:3001`
+
+### 4. Webhooks Stripe (desarrollo)
+
+```bash
+# Instalar Stripe CLI y redirigir webhooks al endpoint local
+stripe listen --forward-to localhost:3000/api/v1/billing/webhook
+```
 
 ---
 
 ## ⚙️ Variables de Entorno
 
-Crea un archivo `.env` en la raíz del proyecto. Ver `.env.example` para referencia:
+### `relaytrace-api/.env.local`
 
 ```env
-# =============================================
 # Server
-# =============================================
 NODE_ENV=development
 PORT=3000
-API_PREFIX=api
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+ALLOWED_ORIGINS=http://localhost:3001
 
-# =============================================
 # Database
-# =============================================
 DATABASE_URL="mysql://relaytrace:password@localhost:3306/relaytrace"
 
-# =============================================
 # JWT
-# =============================================
-JWT_SECRET=your_super_secret_key_min_32_chars
-JWT_REFRESH_SECRET=your_refresh_secret_key_min_32_chars
+JWT_SECRET=min_32_chars_secret
+JWT_REFRESH_SECRET=min_32_chars_refresh_secret
 JWT_EXPIRATION=1h
 JWT_REFRESH_EXPIRATION=7d
 
-# =============================================
 # Redis
-# =============================================
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=
 
-# =============================================
-# Azure Storage
-# =============================================
+# Azure Storage (OCR — Growth+)
 AZURE_STORAGE_ACCOUNT_NAME=
 AZURE_STORAGE_ACCOUNT_KEY=
 AZURE_STORAGE_CONTAINER=relaytrace
 
-# =============================================
-# Azure Document Intelligence (OCR)
-# =============================================
+# Azure Document Intelligence (OCR — Growth+)
 AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=
 AZURE_DOCUMENT_INTELLIGENCE_KEY=
 
-# =============================================
-# Azure AD (Microsoft Graph API)
-# =============================================
+# Microsoft Graph (email parsing)
 AZURE_AD_CLIENT_ID=
 AZURE_AD_CLIENT_SECRET=
 AZURE_AD_TENANT_ID=
 
-# =============================================
 # Stripe
-# =============================================
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_STARTER_PRICE_ID=price_...
+STRIPE_GROWTH_PRICE_ID=price_...
+STRIPE_FLEET_PRICE_ID=price_...
+```
+
+### `relaytrace-web/.env.local`
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
 ---
 
 ## 🗄 Base de Datos
 
-### Diagrama de Entidades
+### Entidades principales
 
 ```
-Company
-├── id (cuid)
-├── name
-├── email (unique)
-├── subscriptionStatus
-└── Relations:
-    ├── users[]
-    ├── trips[]
-    ├── alerts[]
-    ├── auditLogs[]
-    └── relayEmailLogs[]
+Company          → tenant raíz
+├── id, name, email, subscriptionStatus, plan
+└── users[], trips[], alerts[], auditLogs[]
 
-User
-├── id (cuid)
-├── companyId → Company
-├── roleId → Role
-├── name
-├── email (unique)
-├── passwordHash
-├── status (active/inactive)
-└── Relations:
-    └── trips[]
+User             → empleado de una empresa
+├── id, companyId, roleId, name, email, passwordHash, status
+└── trips[]
 
-Role
-├── id (cuid)
-├── name (unique)
-└── permissions (JSON)
+Role             → SUPER_ADMIN / COMPANY_ADMIN / DISPATCHER / DRIVER
+Trip ⭐          → registro de viaje
+├── id, companyId, driverId, tripId (Relay), status
+├── sourceType (manual | ocr | relay_email)
+└── screenshotUrl (URL pública de la foto subida)
 
-Trip ⭐
-├── id (cuid)
-├── companyId → Company
-├── driverId → User
-├── tripId (Amazon Relay ID)
-├── status (pending/confirmed/flagged)
-├── sourceType (manual/ocr/relay_email)
-├── screenshotUrl
-└── Relations:
-    ├── alerts[]
-    ├── ocrResults[]
-    └── reconciliations[]
+AuditLog         → historial de acciones sensibles
+├── action: create_user | change_password | delete_user | revoke_access | ...
+└── metadata (JSON) — quién, sobre quién, timestamp
 
-Alert
-├── id (cuid)
-├── companyId → Company
-├── tripId → Trip
-├── alertType (duplicate/missing/fraud)
-└── resolved
-
-AuditLog
-├── id (cuid)
-├── companyId → Company
-├── userId → User
-├── action
-└── metadata (JSON)
-
-Reconciliation
-├── id (cuid)
-├── companyId
-├── tripId → Trip
-├── relayEmailLogId → RelayEmailLog
-├── matched (boolean)
-└── discrepancyReason
-
-RelayEmailLog
-├── id (cuid)
-├── companyId → Company
-├── relayTripId
-├── emailTimestamp
-├── parsedData (JSON)
-└── reconciliationStatus
+ProcessedWebhookEvent  → idempotencia webhooks Stripe
+Reconciliation   → resultado del motor anti-fraude
+RelayEmailLog    → emails de Amazon Relay parseados
 ```
 
 ### Comandos Prisma
 
 ```bash
-# Generar migrations
-npx prisma migrate dev --name nombre_migration
-
-# Aplicar migrations en producción
-npx prisma migrate deploy
-
-# Regenerar cliente Prisma
-npx prisma generate
-
-# Ver datos en Prisma Studio
-npx prisma studio
-
-# Seed inicial
-npx prisma db seed
+npx prisma migrate dev --name nombre     # nueva migración
+npx prisma migrate deploy                # producción
+npx prisma generate                      # regenerar cliente
+npx prisma studio                        # UI explorador de datos
+npx prisma db seed                       # seed inicial (roles + SUPER_ADMIN)
 ```
 
 ---
 
 ## 🔒 Seguridad
 
-### Medidas implementadas
-
 | Medida | Implementación |
 |--------|---------------|
-| **Autenticación** | JWT con access + refresh tokens |
-| **Autorización** | RBAC con roles granulares |
-| **Multi-tenant** | `companyId` en todas las entidades + guards |
-| **Rate Limiting** | 10 req/seg, 100 req/min por IP |
+| **Auth** | JWT access (1h) + refresh (7d); companyId en payload |
+| **RBAC** | `RolesGuard` — SUPER_ADMIN bypass; roles granulares |
+| **Multi-tenant** | `companyId` obligatorio en todos los servicios |
+| **Plan Guard** | `PlanGuard` + `@RequireFeature` para funciones premium |
+| **Rate Limiting** | 10 req/seg + 100 req/min por IP (`ThrottlerGuard`) |
 | **Helmet** | Headers de seguridad HTTP |
-| **CORS** | Orígenes permitidos configurables |
+| **CORS** | `ALLOWED_ORIGINS` configurable |
+| **Validación** | `ValidationPipe` global con whitelist estricta |
 | **Sanitización** | `SanitizeInterceptor` elimina campos sensibles |
-| **Validación** | `ValidationPipe` con whitelist estricta |
-| **Errores Prisma** | `PrismaExceptionFilter` manejo centralizado |
-| **Secrets** | Azure Key Vault en producción |
-
-### Flujo de autenticación
-
-```
-Client → POST /auth/login → JWT (1h) + Refresh (7d)
-                    ↓
-Client → Request + Bearer Token
-                    ↓
-JwtAuthGuard → Valida token → Attach user al request
-                    ↓
-RolesGuard → Verifica rol (SUPER_ADMIN bypass)
-                    ↓
-CompanyGuard → Valida aislamiento tenant
-                    ↓
-Controller → Service (companyId desde JWT, nunca del body)
-```
+| **Contraseñas** | bcrypt hash; cambios registrados en `AuditLog` |
+| **Webhooks** | HMAC-SHA256 con `stripe.webhooks.constructEvent` |
 
 ---
 
-## 🐳 Docker
+## 💳 Planes y Billing
 
-### Construir imagen
+| Plan | Precio | Conductores | OCR | Reconciliación |
+|------|--------|------------|-----|----------------|
+| **Starter** | $49/mes | Hasta 10 | ❌ | Manual |
+| **Growth** | $99/mes | Hasta 30 | ✅ Azure AI | Automática |
+| **Fleet** | $199/mes | Ilimitados | ✅ Prioritario | Automática + alertas |
 
-```bash
-docker build -t relaytrace-api .
+El flow de onboarding:
 ```
-
-### Correr con Docker Compose
-
-```bash
-# Desde la raíz del monorepo
-docker-compose up -d
-```
-
-### Variables de entorno en Docker
-
-```bash
-docker run -d \
-  --name relaytrace-api \
-  -p 3000:3000 \
-  -e NODE_ENV=production \
-  -e DATABASE_URL=mysql://... \
-  -e JWT_SECRET=... \
-  relaytrace-api
+Landing → "Get Started" → Solicitud de empresa → SUPER_ADMIN aprueba
+→ Link de pago Stripe → Checkout → Webhook → Company + Admin creados automáticamente
 ```
 
 ---
@@ -669,70 +608,71 @@ docker run -d \
 
 ### ✅ Fase 1 — Core MVP (Completado)
 
-- [x] Auth + JWT + RBAC
-- [x] Multi-tenant (company isolation)
-- [x] Trips Core (registro manual)
-- [x] Dashboard básico
-- [x] Auditoría interna
-- [x] Rate limiting + seguridad
-- [x] Swagger / OpenAPI
+- [x] Auth + JWT con access/refresh tokens
+- [x] Arquitectura multi-tenant con aislamiento por `companyId`
+- [x] CRUD de viajes (core del negocio)
+- [x] Dashboard con KPIs
+- [x] Auditoría interna (`AuditLog`)
+- [x] Rate limiting + Helmet + CORS
+- [x] Swagger / OpenAPI documentado
 
-### 🔄 Fase 2 — SaaS Comercial (En progreso)
+### ✅ Fase 2A — SaaS Foundation (Completado)
 
-- [ ] Stripe subscriptions completas
-- [ ] Límites por plan
-- [ ] Onboarding empresas
-- [ ] Azure Blob Storage real
-- [ ] Frontend PWA (Next.js 15)
+- [x] Stripe Checkout Sessions + Webhook idempotente
+- [x] `PlanGuard` + límites por plan (`@RequireFeature`)
+- [x] Onboarding de empresas (solicitud → aprobación → pago → activación)
+- [x] Roles endpoint (`GET /roles`)
+- [x] SUPER_ADMIN puede gestionar cualquier empresa
 
-### 📅 Fase 3 — OCR Automation
+### ✅ Fase 2B — Frontend PWA (Completado)
 
-- [ ] Azure AI Document Intelligence
-- [ ] Screenshot → Trip ID automático
-- [ ] Queue async (BullMQ)
+- [x] Next.js 15 App Router con layout por rol
+- [x] Landing page con animaciones (shimmer, glow, scale)
+- [x] Logos reales + favicon + PWA manifest (`site.webmanifest`)
+- [x] Login con JWT e interceptor de refresh automático
+- [x] Dashboard administrativo: mapa Leaflet + KPIs + tabla de viajes recientes
+- [x] Sidebar colapsable (acordeón lateral) con estado persistido en localStorage
+- [x] Responsive: hamburger en móvil, sidebar estático en desktop
+- [x] People management completo: crear / editar / cambiar contraseña / revocar / restaurar / eliminar
+- [x] Cambio de contraseña con barra de fortaleza + confirmación + audit log
+- [x] Driver PWA: dashboard de mis viajes + registro de viaje
+- [x] Upload de screenshot: botón de cámara → preview → barra de progreso → guardado en disco
+- [x] `safeFormat()` — protección contra fechas null en conductores
 
-### 📅 Fase 4 — Reconciliación Automática
+### 🔄 Fase 3 — OCR Automation (Pendiente)
 
-- [ ] Microsoft Graph API (emails Relay)
-- [ ] Parser automático
-- [ ] Motor anti-fraude completo
-- [ ] Alertas en tiempo real
+- [ ] Azure AI Document Intelligence en producción
+- [ ] Screenshot → Trip ID extraído automáticamente (BullMQ async)
+- [ ] `OcrResult` vinculado al viaje + confianza de extracción
+
+### 📅 Fase 4 — Reconciliación Completa (Pendiente)
+
+- [ ] Parser de emails Amazon Relay via Microsoft Graph API
+- [ ] Motor anti-fraude automático (match/no-match)
+- [ ] Alertas en tiempo real con notificaciones push
 
 ### 📅 Fase 5 — Inteligencia Operacional
 
-- [ ] Analytics avanzado
-- [ ] Score de conductor
-- [ ] Predicción de discrepancias
-- [ ] Alertas inteligentes
-
-### 📅 Fase 6 — Enterprise Scaling
-
-- [ ] AKS / Microservicios
-- [ ] Event-driven architecture
-- [ ] Multi-región
-- [ ] CQRS + Event Sourcing
+- [ ] Score de conductor basado en historial
+- [ ] Analytics avanzado por empresa
+- [ ] Predicción de discrepancias con ML
 
 ---
 
 ## 🤝 Contribución
 
-Este es un repositorio privado. Para contribuir:
+1. Crea una rama: `git checkout -b feature/nombre-feature`
+2. Commit: `git commit -m 'feat: descripción del cambio'`
+3. Push y abre un Pull Request
 
-1. Clona el repositorio
-2. Crea una rama: `git checkout -b feature/nombre-feature`
-3. Commit: `git commit -m 'feat: descripción del cambio'`
-4. Push: `git push origin feature/nombre-feature`
-5. Abre un Pull Request
-
-### Convención de commits
+**Convención de commits:**
 
 ```
 feat:     Nueva funcionalidad
 fix:      Corrección de bug
 docs:     Documentación
-refactor: Refactorización sin cambio funcional
-test:     Tests
-chore:    Tareas de mantenimiento
+refactor: Sin cambio funcional
+chore:    Mantenimiento
 ```
 
 ---
