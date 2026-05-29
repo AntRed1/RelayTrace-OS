@@ -9,10 +9,11 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import Stripe from 'stripe';
 
-import { PrismaService } from '../../prisma/prisma.service';
-import { EmailService } from '../notifications/email.service';
+import { PrismaService }  from '../../prisma/prisma.service';
+import { CacheService }   from '../../common/cache/cache.service';
+import { EmailService }   from '../notifications/email.service';
+import { PlansService }   from '../plans/plans.service';
 import { PreRegistrationCheckoutDto } from './dto/billing.dto';
-import { PlanName } from '../../config/plan.config';
 
 // ─── Local types (avoid Stripe namespace resolution issues) ───────────────────
 
@@ -53,9 +54,11 @@ export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
   constructor(
-    private readonly config: ConfigService,
-    private readonly prisma: PrismaService,
+    private readonly config:       ConfigService,
+    private readonly prisma:       PrismaService,
+    private readonly cache:        CacheService,
     private readonly emailService: EmailService,
+    private readonly plansService: PlansService,
   ) {
     this.stripe = new Stripe(this.getEnv('STRIPE_SECRET_KEY'));
   }
@@ -71,15 +74,18 @@ export class BillingService {
   }
 
   /**
-   * Resolves the Stripe price ID for a given plan.
-   * Returns null for Fleet (custom — must contact sales).
+   * Resolves the Stripe price ID for a plan slug from the DB.
+   * Returns null for contact-sales plans (priceMonthly === 0) or when no
+   * Stripe price has been provisioned yet.
+   * Cached via PlansService — sub-millisecond on cache hit.
    */
-  private getPriceId(plan: PlanName): string | null {
-    const map: Partial<Record<PlanName, string>> = {
-      starter: this.config.get<string>('STRIPE_PRICE_STARTER') ?? '',
-      growth:  this.config.get<string>('STRIPE_PRICE_GROWTH')  ?? '',
-    };
-    return map[plan] || null;
+  private async getPriceId(planSlug: string): Promise<string | null> {
+    try {
+      const plan = await this.plansService.findBySlug(planSlug);
+      return plan.stripePriceId ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -128,17 +134,24 @@ export class BillingService {
   async createPreRegistrationCheckout(
     dto: PreRegistrationCheckoutDto,
   ): Promise<{ url: string }> {
-    if (dto.plan === 'fleet') {
+    // Resolve plan definition from DB (cached) to get Stripe price ID
+    const planDef = await this.plansService.findBySlug(dto.plan).catch(() => null);
+
+    if (!planDef) {
+      throw new BadRequestException(`Plan "${dto.plan}" does not exist.`);
+    }
+
+    if (planDef.priceMonthly === 0) {
       throw new BadRequestException(
-        'Fleet plan requires custom pricing. Please contact sales@relaytrace.com',
+        `Plan "${planDef.displayName}" requires custom pricing. Please contact sales@relaytrace.com`,
       );
     }
 
-    const priceId = this.getPriceId(dto.plan as PlanName);
+    const priceId = await this.getPriceId(dto.plan);
     if (!priceId) {
       throw new BadRequestException(
-        `Stripe price ID for plan "${dto.plan}" is not configured. ` +
-          'Set STRIPE_PRICE_STARTER / STRIPE_PRICE_GROWTH in environment.',
+        `No Stripe price configured for plan "${dto.plan}". ` +
+          'Create the plan via the admin panel to auto-provision a Stripe price.',
       );
     }
 
@@ -366,12 +379,12 @@ export class BillingService {
     );
 
     // ── 6. Send emails (non-blocking) ───────────────────────────────────────
-    const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
-    const priceMap: Record<string, string> = {
-      starter: '$49 / month',
-      growth:  '$149 / month',
-      fleet:   'Custom',
-    };
+    // Resolve plan display info from DB (cached)
+    const planDef = await this.plansService.findBySlug(plan).catch(() => null);
+    const planLabel  = planDef?.displayName ?? plan;
+    const planAmount = planDef && planDef.priceMonthly > 0
+      ? `$${planDef.priceMonthly} / month`
+      : 'Custom';
 
     await Promise.allSettled([
       this.emailService.sendWelcomeEmail({
@@ -379,15 +392,15 @@ export class BillingService {
         name:         contactName,
         companyName,
         tempPassword,
-        plan,
+        plan:         planLabel,
       }),
 
       this.emailService.sendPaymentConfirmationEmail({
         to:          email,
         name:        contactName,
         companyName,
-        plan,
-        amount:      priceMap[plan] ?? planLabel,
+        plan:        planLabel,
+        amount:      planAmount,
       }),
 
       this.emailService.sendAdminNotificationEmail({
@@ -402,9 +415,8 @@ export class BillingService {
   private async handleSubscriptionChange(
     sub: StripeSubscriptionLike,
   ): Promise<void> {
-    const stripeSubscriptionId = sub.id;
     const company = await this.prisma.company.findUnique({
-      where: { stripeSubscriptionId },
+      where: { stripeSubscriptionId: sub.id },
     });
 
     if (company) {
@@ -412,9 +424,10 @@ export class BillingService {
         where: { id: company.id },
         data:  { subscriptionStatus: sub.status },
       });
-      this.logger.log(
-        `Subscription ${sub.status} for company ${company.id}`,
-      );
+      // Invalidate subscription-status cache so JwtAuthGuard picks up the new
+      // status on the very next request (no stale 5-minute window).
+      await this.cache.del(`company:sub:${company.id}`);
+      this.logger.log(`Subscription ${sub.status} for company ${company.id}`);
     }
   }
 
@@ -430,6 +443,7 @@ export class BillingService {
         where: { id: company.id },
         data:  { subscriptionStatus: 'canceled' },
       });
+      await this.cache.del(`company:sub:${company.id}`);
       this.logger.warn(`Subscription canceled for company ${company.id}`);
     }
   }

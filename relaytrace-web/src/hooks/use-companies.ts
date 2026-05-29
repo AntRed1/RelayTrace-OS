@@ -5,7 +5,6 @@ import {
   ProcessRequestDto,
 } from "@/services/companies.service";
 import { CompanyRequestStatus } from "@/types";
-import { PlanName } from "@/config/plan.config";
 
 export const PLAN_INFO_KEY = "plan-info";
 
@@ -46,7 +45,7 @@ export function usePlanInfo(enabled = true) {
 export function useUpdatePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ companyId, plan }: { companyId: string; plan: PlanName }) =>
+    mutationFn: ({ companyId, plan }: { companyId: string; plan: string }) =>
       companiesService.updateCompanyPlan(companyId, plan),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [PLAN_INFO_KEY] });

@@ -6,8 +6,6 @@ import {
   CompanyRequestStatus,
   PlanInfo,
 } from "@/types";
-import { PlanName } from "@/config/plan.config";
-
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
 export interface ProcessRequestDto {
@@ -16,10 +14,10 @@ export interface ProcessRequestDto {
 }
 
 export interface OnboardCompanyDto {
-  adminEmail: string;
-  adminName: string;
+  adminEmail:        string;
+  adminName:         string;
   temporaryPassword: string;
-  plan?: PlanName;
+  plan?:             string; // any plan slug from the DB
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
@@ -42,7 +40,7 @@ export const companiesService = {
     return data.data;
   },
 
-  async updateCompanyPlan(companyId: string, plan: PlanName): Promise<PlanInfo> {
+  async updateCompanyPlan(companyId: string, plan: string): Promise<PlanInfo> {
     const { data } = await apiClient.patch<ApiResponse<PlanInfo>>(
       `/companies/${companyId}/plan`,
       { plan },

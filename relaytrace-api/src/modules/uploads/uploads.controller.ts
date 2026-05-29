@@ -9,10 +9,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
-import { randomUUID } from 'crypto';
+import { memoryStorage } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -21,45 +18,35 @@ import {
   ApiBody,
   ApiConsumes,
 } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { UploadsService } from './uploads.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PlanGuard } from '../../common/guards/plan.guard';
 import { RequireFeature } from '../../common/decorators/require-feature.decorator';
-import { IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+
+// ─── DTOs ─────────────────────────────────────────────────────────────────────
 
 class PresignedUrlDto {
-  @ApiProperty({ example: 'screenshot-trip-123.jpg' })
+  @ApiProperty({ example: 'bill-of-lading.jpg' })
   @IsString()
   filename: string;
 }
 
-// ─── Multer disk storage for local screenshots ─────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const screenshotsDir = join(process.cwd(), 'public', 'screenshots');
+const ALLOWED_MIMETYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
 
-function ensureScreenshotsDir() {
-  if (!existsSync(screenshotsDir)) {
-    mkdirSync(screenshotsDir, { recursive: true });
-  }
-}
-
-const screenshotStorage = diskStorage({
-  destination: (_req, _file, cb) => {
-    ensureScreenshotsDir();
-    cb(null, screenshotsDir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, `${randomUUID()}${ext}`);
-  },
-});
-
-const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-// ─── Controller ────────────────────────────────────────────────────────────
+// ─── Controller ────────────────────────────────────────────────────────────────
 
 @ApiTags('Uploads')
 @ApiBearerAuth('JWT')
@@ -73,11 +60,17 @@ export class UploadsController {
   @Post('presigned-url')
   @RequireFeature('ocr')
   @ApiOperation({
-    summary: 'Generar URL pre-firmada para OCR',
-    description: 'Genera URL de Azure Blob Storage. Requiere plan Growth o superior.',
+    summary: 'Generar URL pre-firmada para OCR (Growth+)',
+    description:
+      'Genera una URL de escritura temporal en Azure Blob Storage. ' +
+      'El cliente sube el archivo directamente a Azure. Requiere plan Growth o superior.',
   })
   @ApiBody({ type: PresignedUrlDto })
-  @ApiResponse({ status: 201, description: 'URL pre-firmada generada' })
+  @ApiResponse({
+    status: 201,
+    description: 'URL pre-firmada generada',
+    schema: { example: { uploadUrl: 'https://...blob.core...?sas=...', blobPath: 'ocr-documents/company123/uuid.jpg' } },
+  })
   @ApiResponse({ status: 402, description: 'Plan Growth requerido' })
   getPresignedUrl(@Request() req, @Body() dto: PresignedUrlDto) {
     return this.uploadsService.generatePresignedUrl(
@@ -86,18 +79,29 @@ export class UploadsController {
     );
   }
 
-  // ── Direct screenshot upload (all plans, all authenticated users) ─────────
+  // ── Direct screenshot upload (all plans) ─────────────────────────────────
 
+  /**
+   * File is held in memory (memoryStorage) and streamed directly to
+   * Azure Blob Storage. No disk I/O on the server — safe for ephemeral
+   * App Service instances.
+   *
+   * Returns { url: blobPath } — the blob path stored as Trip.screenshotUrl.
+   * TripsService converts blob paths to SAS URLs when serving trip data.
+   */
   @Post('screenshot')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: screenshotStorage,
+      storage: memoryStorage(),
       limits: { fileSize: MAX_SIZE_BYTES },
       fileFilter: (_req, file, cb) => {
         if (ALLOWED_MIMETYPES.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Only JPEG, PNG and WebP images are allowed'), false);
+          cb(
+            new BadRequestException('Only JPEG, PNG and WebP images are allowed'),
+            false,
+          );
         }
       },
     }),
@@ -105,7 +109,9 @@ export class UploadsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Upload trip screenshot',
-    description: 'Uploads a screenshot image (≤10 MB). Returns a public URL. Available on all plans.',
+    description:
+      'Uploads a screenshot image (≤10 MB) to Azure Blob Storage. ' +
+      'Returns the blob path stored on the trip record. Available on all plans.',
   })
   @ApiBody({
     schema: {
@@ -114,12 +120,29 @@ export class UploadsController {
       required: ['file'],
     },
   })
-  @ApiResponse({ status: 201, description: 'Screenshot uploaded', schema: { example: { url: '/screenshots/uuid.jpg' } } })
+  @ApiResponse({
+    status: 201,
+    description: 'Screenshot uploaded to Azure Blob Storage',
+    schema: { example: { url: 'screenshots/company123/uuid.jpg' } },
+  })
   @ApiResponse({ status: 400, description: 'No file provided or invalid type' })
-  uploadScreenshot(@UploadedFile() file: Express.Multer.File) {
+  async uploadScreenshot(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
-    return { url: `/screenshots/${file.filename}` };
+
+    const { blobPath } = await this.uploadsService.uploadScreenshot(
+      req.user.companyId,
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+    );
+
+    // Return as "url" to keep the API contract the same as before.
+    // The value is now a blob path; TripsService converts it to a SAS URL.
+    return { url: blobPath };
   }
 }

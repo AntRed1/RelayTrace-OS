@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService, AuditActor } from '../audit/audit.service';
 import {
   CreateCompanyDto,
   UpdateCompanyDto,
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class CompaniesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit:  AuditService,
+  ) {}
 
   // ─── Company CRUD ──────────────────────────────────────────────────────────
 
@@ -88,12 +92,24 @@ export class CompaniesService {
     return req;
   }
 
-  async processRequest(id: string, dto: ProcessRequestDto) {
-    await this.findRequest(id);
-    return this.prisma.companyRequest.update({
+  async processRequest(id: string, dto: ProcessRequestDto, actor?: AuditActor) {
+    const request = await this.findRequest(id);
+
+    const updated = await this.prisma.companyRequest.update({
       where: { id },
-      data: { status: dto.status },
+      data:  { status: dto.status },
     });
+
+    if (actor) {
+      const action = dto.status === 'rejected' ? 'reject_company' : 'approve_company';
+      await this.audit.log({
+        action,
+        actor,
+        metadata: { requestId: id, companyName: request.companyName, email: request.email },
+      });
+    }
+
+    return updated;
   }
 
   /**
@@ -101,11 +117,12 @@ export class CompaniesService {
    * solo paso atómico para mantener consistencia.
    */
   async approveAndOnboard(
-    requestId: string,
-    adminEmail: string,
-    adminName: string,
+    requestId:    string,
+    adminEmail:   string,
+    adminName:    string,
     passwordHash: string,
-    plan?: string,
+    plan?:        string,
+    actor?:       AuditActor,
   ) {
     const request = await this.findRequest(requestId);
 
@@ -156,6 +173,20 @@ export class CompaniesService {
       where: { id: requestId },
       data: { status: 'approved' },
     });
+
+    if (actor) {
+      await this.audit.log({
+        action: 'approve_company',
+        actor,
+        metadata: {
+          requestId,
+          companyId:   company.id,
+          companyName: company.name,
+          adminEmail,
+          plan:        plan ?? 'starter',
+        },
+      });
+    }
 
     const { passwordHash: _ph, ...safeUser } = adminUser;
     return { company, adminUser: safeUser };

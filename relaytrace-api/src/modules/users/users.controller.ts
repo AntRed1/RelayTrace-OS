@@ -43,8 +43,11 @@ export class UsersController {
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'Usuario creado' })
   @ApiResponse({ status: 409, description: 'Email ya registrado' })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createUserDto: CreateUserDto, @CurrentUser() actor) {
+    return this.usersService.create(createUserDto, {
+      userId:    actor.id,
+      companyId: actor.companyId,
+    });
   }
 
   @Get()
@@ -101,7 +104,10 @@ export class UsersController {
   update(@Param('id') id: string, @Request() req, @Body() updateUserDto: UpdateUserDto) {
     const companyId =
       req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
-    return this.usersService.update(id, companyId, updateUserDto);
+    return this.usersService.update(id, companyId, updateUserDto, {
+      userId:    req.user.id,
+      companyId: req.user.companyId,
+    });
   }
 
   @Delete(':id')
@@ -112,7 +118,10 @@ export class UsersController {
   delete(@Param('id') id: string, @Request() req) {
     const companyId =
       req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
-    return this.usersService.delete(id, companyId);
+    return this.usersService.delete(id, companyId, {
+      userId:    req.user.id,
+      companyId: req.user.companyId,
+    });
   }
 
   // ── PATCH /users/:id/password ─────────────────────────────────────────────
@@ -135,14 +144,11 @@ export class UsersController {
     @Request() req,
     @Body() dto: ChangePasswordDto,
   ) {
-    const isSuperAdmin  = req.user.role === 'SUPER_ADMIN';
-    const companyId     = isSuperAdmin ? null : req.user.companyId;
-    return this.usersService.changePassword(
-      id,
-      companyId,
-      req.user.sub,         // requesterId
-      req.user.companyId,   // requesterCompanyId (may be null for SUPER_ADMIN)
-      dto,
-    );
+    const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+    const companyId    = isSuperAdmin ? null : req.user.companyId;
+    return this.usersService.changePassword(id, companyId, {
+      userId:    req.user.id ?? req.user.sub,
+      companyId: req.user.companyId,
+    }, dto);
   }
 }

@@ -12,6 +12,8 @@ import {
   Settings,
   LogOut,
   ClipboardList,
+  CreditCard,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -95,6 +97,7 @@ export function Sidebar() {
   const { user, logout }    = useAuth();
   const authUser             = useAuthStore((s) => s.user);
   const isSuperAdmin         = authUser?.role === "SUPER_ADMIN";
+  const isCompanyAdmin       = authUser?.role === "COMPANY_ADMIN";
   const { collapsed, mobileOpen, toggle, closeMobile } = useSidebar();
 
   // Badge: pending requests count (SUPER_ADMIN only)
@@ -183,6 +186,26 @@ export function Sidebar() {
               icon={ClipboardList}
               collapsed={collapsed}
               badge={pendingCount}
+            />
+          )}
+
+          {/* Plans — SUPER_ADMIN only */}
+          {isSuperAdmin && (
+            <NavItem
+              href={ROUTES.ADMIN.PLANS}
+              label="Plans"
+              icon={CreditCard}
+              collapsed={collapsed}
+            />
+          )}
+
+          {/* Audit Log — SUPER_ADMIN and COMPANY_ADMIN */}
+          {(isSuperAdmin || isCompanyAdmin) && (
+            <NavItem
+              href={ROUTES.ADMIN.AUDIT}
+              label="Audit Log"
+              icon={ShieldCheck}
+              collapsed={collapsed}
             />
           )}
         </nav>

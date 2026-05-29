@@ -54,8 +54,7 @@ export class AuthService {
 
     await this.auditService.log({
       action: 'login',
-      userId: user.id,
-      companyId: user.companyId,
+      actor:  { userId: user.id, companyId: user.companyId },
       metadata: { email: user.email, role: user.role.name },
     });
 

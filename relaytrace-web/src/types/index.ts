@@ -179,6 +179,78 @@ export interface ReconciliationSummary {
 }
 
 // ============================================================
+// Plans
+// ============================================================
+
+/** Full plan shape (admin endpoints — includes Stripe IDs). */
+export interface Plan {
+  id: string;
+  slug: string;
+  displayName: string;
+  description: string;
+  priceMonthly: number;
+  currency: string;
+  maxDrivers: number | null;
+  featureLabels: string[];
+  featureFlags: string[];
+  isActive: boolean;
+  isPopular: boolean;
+  sortOrder: number;
+  ctaLabel: string;
+  stripePriceId: string | null;
+  stripeProductId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Minimal plan shape returned by the public GET /plans endpoint. */
+export interface PublicPlan {
+  slug: string;
+  displayName: string;
+  description: string;
+  priceMonthly: number;
+  currency: string;
+  maxDrivers: number | null;
+  featureLabels: string[];
+  isPopular: boolean;
+  ctaLabel: string;
+}
+
+export interface CreatePlanPayload {
+  slug: string;
+  displayName: string;
+  description: string;
+  priceMonthly: number;
+  currency?: string;
+  maxDrivers?: number | null;
+  featureLabels: string[];
+  featureFlags: string[];
+  isActive?: boolean;
+  isPopular?: boolean;
+  sortOrder?: number;
+  ctaLabel?: string;
+}
+
+export type UpdatePlanPayload = Partial<CreatePlanPayload>;
+
+// ============================================================
+// Audit
+// ============================================================
+export interface AuditLogEntry {
+  id:          string;
+  action:      string;
+  companyId:   string;
+  companyName: string | null;
+  userId:      string | null;
+  userName:    string | null;
+  userEmail:   string | null;
+  metadata:    Record<string, unknown>;
+  ipAddress:   string | null;
+  userAgent:   string | null;
+  createdAt:   string;
+}
+
+// ============================================================
 // API
 // ============================================================
 export interface ApiResponse<T> {

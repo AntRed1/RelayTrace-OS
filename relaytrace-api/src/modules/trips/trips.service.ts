@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTripDto, UpdateTripDto, TripFilterDto } from './dto/trips.dtos';
 import {
@@ -10,6 +10,7 @@ import {
 import { QueueProducerService } from '../queue/queue-producer.service';
 import { RequestUser } from '../../common/types/user.types';
 import { AuditService } from '../audit/audit.service';
+import { AzureBlobService } from '../../common/azure-blob/azure-blob.service';
 
 const DRIVER_SELECT = {
   id: true,
@@ -24,12 +25,18 @@ const DRIVER_SELECT = {
   },
 };
 
+// SAS URL expiry for screenshot display: 2 hours
+const SCREENSHOT_SAS_EXPIRY_MINUTES = 120;
+
 @Injectable()
 export class TripsService {
+  private readonly logger = new Logger(TripsService.name);
+
   constructor(
     private prisma: PrismaService,
     private queueProducer: QueueProducerService,
     private auditService: AuditService,
+    private blobService: AzureBlobService,
   ) {}
 
   async create(
@@ -65,8 +72,7 @@ export class TripsService {
 
     await this.auditService.log({
       action: 'create_trip',
-      userId: driverId,
-      companyId,
+      actor:  { userId: driverId, companyId },
       metadata: {
         tripId: trip.id,
         relayTripId: trip.tripId,
@@ -82,7 +88,7 @@ export class TripsService {
       });
     }
 
-    return trip;
+    return this.enrichWithSasUrl(trip);
   }
 
   async findByDriver(
@@ -106,7 +112,7 @@ export class TripsService {
     ]);
 
     return {
-      data: trips,
+      data: await this.enrichManyWithSasUrls(trips),
       meta: {
         page,
         pageSize: limit,
@@ -147,7 +153,7 @@ export class TripsService {
     ]);
 
     return {
-      data: trips,
+      data: await this.enrichManyWithSasUrls(trips),
       meta: {
         page,
         pageSize: limit,
@@ -171,17 +177,19 @@ export class TripsService {
 
     if (!trip) throw new ResourceNotFoundException('Trip', id);
 
-    return trip;
+    return this.enrichWithSasUrl(trip);
   }
 
   async update(id: string, user: RequestUser, updateTripDto: UpdateTripDto) {
     await this.findOne(id, user);
 
-    return this.prisma.trip.update({
+    const updated = await this.prisma.trip.update({
       where: { id },
       data: updateTripDto,
       include: { driver: { select: DRIVER_SELECT }, alerts: true },
     });
+
+    return this.enrichWithSasUrl(updated);
   }
 
   async delete(id: string, user: RequestUser) {
@@ -189,8 +197,7 @@ export class TripsService {
 
     await this.auditService.log({
       action: 'delete_trip',
-      userId: user.id,
-      companyId: user.companyId,
+      actor:  { userId: user.id, companyId: user.companyId },
       metadata: { tripId: id },
     });
 
@@ -218,5 +225,47 @@ export class TripsService {
       stats,
       totalToday: stats.reduce((sum, s) => sum + s._count, 0),
     };
+  }
+
+  // ── Private: SAS URL enrichment ───────────────────────────────────────────
+
+  /**
+   * If screenshotUrl is a blob path (not an http URL or legacy /screenshots/ path),
+   * replace it with a fresh 2-hour SAS URL for browser display.
+   * Silently skips if blob storage is not configured or generation fails.
+   */
+  private async enrichWithSasUrl<T extends { screenshotUrl?: string | null }>(
+    trip: T,
+  ): Promise<T> {
+    if (!AzureBlobService.isBlobPath(trip.screenshotUrl)) {
+      return trip; // already a URL or null — nothing to do
+    }
+
+    const parsed = AzureBlobService.parseBlobPath(trip.screenshotUrl!);
+    if (!parsed) return trip;
+
+    try {
+      const sasUrl = await this.blobService.generateSasUrl(
+        parsed.container,
+        parsed.blobName,
+        SCREENSHOT_SAS_EXPIRY_MINUTES,
+      );
+      return { ...trip, screenshotUrl: sasUrl };
+    } catch (err) {
+      this.logger.warn(
+        `Could not generate SAS URL for blob "${trip.screenshotUrl}": ${(err as Error).message}`,
+      );
+      return trip; // return blob path unchanged — client will get a non-loadable URL
+    }
+  }
+
+  /**
+   * Batch SAS URL enrichment. Uses Promise.all so all trips are enriched in parallel.
+   * With a cached delegation key, signing is local (no Azure API call per trip).
+   */
+  private enrichManyWithSasUrls<T extends { screenshotUrl?: string | null }>(
+    trips: T[],
+  ): Promise<T[]> {
+    return Promise.all(trips.map((t) => this.enrichWithSasUrl(t)));
   }
 }

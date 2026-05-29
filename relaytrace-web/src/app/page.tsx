@@ -1,40 +1,27 @@
-"use client";
+import { LandingPageClient } from "@/components/landing/LandingPageClient";
+import { plansService }      from "@/services/plans.service";
+import { PublicPlan }        from "@/types";
 
-import { useState } from "react";
-import { LandingNav }         from "@/components/landing/LandingNav";
-import { HeroSection }        from "@/components/landing/HeroSection";
-import { ProblemSection }     from "@/components/landing/ProblemSection";
-import { WorkflowSection }    from "@/components/landing/WorkflowSection";
-import { FeaturesSection }    from "@/components/landing/FeaturesSection";
-import { PricingSection }     from "@/components/landing/PricingSection";
-import { CtaSection }         from "@/components/landing/CtaSection";
-import { LandingFooter }      from "@/components/landing/LandingFooter";
-import { RequestAccessModal } from "@/components/landing/RequestAccessModal";
-import { PlanName }           from "@/config/plan.config";
+/**
+ * Landing page — Server Component.
+ *
+ * Plans are fetched at build time (or in ISR background) via the public
+ * GET /plans endpoint. The response is cached by Next.js for 5 minutes
+ * (`revalidate: 300`), meaning users never wait for a DB query.
+ *
+ * Interactive state (modal, animations) lives in LandingPageClient.
+ */
+export const revalidate = 300; // ISR: revalidate every 5 min
 
-export default function LandingPage() {
-  // null = modal closed; any PlanName = modal open with that plan pre-selected
-  const [selectedPlan, setSelectedPlan] = useState<PlanName | null>(null);
+export default async function LandingPage() {
+  let plans: PublicPlan[] = [];
 
-  const openModal   = (plan: PlanName = "growth") => setSelectedPlan(plan);
-  const closeModal  = () => setSelectedPlan(null);
+  try {
+    plans = await plansService.getPublic();
+  } catch {
+    // If the API is unreachable at build time, render with empty plans array.
+    // PricingSection handles the empty state gracefully.
+  }
 
-  return (
-    <>
-      <LandingNav      onRequestAccess={() => openModal()} />
-      <HeroSection     onRequestAccess={() => openModal()} />
-      <ProblemSection  />
-      <WorkflowSection />
-      <FeaturesSection />
-      <CtaSection      onRequestAccess={() => openModal()} />
-      <PricingSection  onSelectPlan={openModal} />
-      <LandingFooter   />
-
-      <RequestAccessModal
-        open={selectedPlan !== null}
-        initialPlan={selectedPlan ?? "growth"}
-        onClose={closeModal}
-      />
-    </>
-  );
+  return <LandingPageClient plans={plans} />;
 }

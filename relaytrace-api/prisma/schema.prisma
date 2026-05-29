@@ -150,14 +150,17 @@ model AuditLog {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  action   String // login, create_trip, delete_trip
-  metadata String // JSON metadata
+  action    String   // login | create_trip | create_plan | …
+  metadata  String   @db.Text // JSON payload
+  ipAddress String?
+  userAgent String?
 
   createdAt DateTime @default(now())
 
   @@index([companyId])
   @@index([userId])
   @@index([action])
+  @@index([createdAt])
 }
 
 /// Solicitudes de acceso enviadas desde la landing page (pre-onboarding)
@@ -176,6 +179,32 @@ model CompanyRequest {
 
   @@index([status])
   @@index([email])
+}
+
+/// Pricing plan definition — managed by SUPER_ADMIN, cached in Redis.
+/// featureLabels: JSON string[]   — bullet points shown on the pricing card.
+/// featureFlags:  JSON string[]   — internal PlanFeature keys consumed by PlanGuard.
+model Plan {
+  id              String   @id @default(cuid())
+  slug            String   @unique            // "starter" | "growth" | "fleet" | custom
+  displayName     String
+  description     String   @db.Text
+  priceMonthly    Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  maxDrivers      Int?                        // null = unlimited
+  featureLabels   String   @db.Text           // JSON: string[]  — pricing card bullets
+  featureFlags    String   @db.Text           // JSON: PlanFeature[]  — access control
+  isActive        Boolean  @default(true)
+  isPopular       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  ctaLabel        String   @default("Get Started")
+  stripePriceId   String?                     // synced after price change
+  stripeProductId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
 }
 
 /// Idempotency guard — prevents duplicate processing of Stripe webhook events

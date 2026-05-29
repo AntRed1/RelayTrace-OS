@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useEffect, useState } from "react";
+import { useForm }             from "react-hook-form";
+import { zodResolver }         from "@hookform/resolvers/zod";
+import { z }                   from "zod";
 import {
   X,
   Loader2,
@@ -18,38 +18,32 @@ import {
   Lock,
 } from "lucide-react";
 import { billingService } from "@/services/billing.service";
-import { PLAN_CONFIG, PlanName } from "@/config/plan.config";
+import { PublicPlan }     from "@/types";
 
-// ─── Schemas ──────────────────────────────────────────────────────────────────
+// ─── Step-1 schema ────────────────────────────────────────────────────────────
 
 const step1Schema = z.object({
   companyName: z.string().min(2, "Company name is required"),
   contactName: z.string().min(2, "Contact name is required"),
   email:       z.string().email("Valid email required"),
   phone:       z.string().optional(),
-  driverCount: z
-    .number()
-    .int()
-    .min(1)
-    .max(9999)
-    .optional(),
+  driverCount: z.number().int().min(1).max(9999).optional(),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
 
-// ─── Plan option card ────────────────────────────────────────────────────────
+// ─── Plan option card ─────────────────────────────────────────────────────────
 
-function PlanCard({
+function PlanOptionCard({
   plan,
   selected,
   onSelect,
 }: {
-  plan: PlanName;
+  plan:     PublicPlan;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const cfg = PLAN_CONFIG[plan];
-  const isFleet = plan === "fleet";
+  const isContactUs = plan.priceMonthly === 0;
 
   return (
     <button
@@ -64,14 +58,15 @@ function PlanCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
+          {/* Name + popular badge */}
           <div className="flex items-center gap-2 mb-0.5">
             <span
               className="text-sm font-bold"
               style={{ color: selected ? "#2563eb" : "#0f172a" }}
             >
-              {cfg.displayName}
+              {plan.displayName}
             </span>
-            {plan === "growth" && (
+            {plan.isPopular && (
               <span
                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white"
                 style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
@@ -80,26 +75,34 @@ function PlanCard({
               </span>
             )}
           </div>
+
+          {/* Driver cap */}
           <p className="text-xs text-slate-400 mb-2">
-            {cfg.maxDrivers === 0
+            {plan.maxDrivers === null
               ? "Unlimited drivers"
-              : `Up to ${cfg.maxDrivers} drivers`}
+              : `Up to ${plan.maxDrivers} drivers`}
           </p>
+
+          {/* Price */}
           <div className="flex items-baseline gap-1">
             <span
               className="text-xl font-black"
               style={{ color: selected ? "#2563eb" : "#0f172a" }}
             >
-              {cfg.price}
+              {isContactUs
+                ? "Custom"
+                : `$${plan.priceMonthly % 1 === 0 ? plan.priceMonthly : plan.priceMonthly.toFixed(2)}`}
             </span>
-            {cfg.period && (
-              <span className="text-xs text-slate-400">{cfg.period}</span>
+            {!isContactUs && (
+              <span className="text-xs text-slate-400">/ month</span>
             )}
           </div>
-          {isFleet && (
+          {isContactUs && (
             <p className="text-xs text-slate-400 mt-1">Contact sales for pricing</p>
           )}
         </div>
+
+        {/* Radio dot */}
         <div
           className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 transition-all"
           style={
@@ -115,56 +118,84 @@ function PlanCard({
   );
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Returns the slug that should be pre-selected when the modal opens. */
+function resolveDefaultSlug(plans: PublicPlan[], hint?: string): string {
+  if (hint && plans.some((p) => p.slug === hint)) return hint;
+  return plans.find((p) => p.isPopular)?.slug ?? plans[0]?.slug ?? "";
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
-  /** Pre-select a plan when opened from a pricing card CTA */
-  initialPlan?: PlanName;
+  open:         boolean;
+  onClose:      () => void;
+  /** Active plans fetched from the DB (passed down from the Server Component). */
+  plans:        PublicPlan[];
+  /** Pre-select a specific plan when opened from a CTA button. */
+  initialPlan?: string;
 }
 
 type Step = 1 | 2 | 3;
 
-export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
-  const [step, setStep]         = useState<Step>(1);
-  const [selectedPlan, setPlan] = useState<PlanName>(initialPlan ?? "growth");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props) {
+  const [step,        setStep]        = useState<Step>(1);
+  const [selectedSlug, setSelectedSlug] = useState<string>(() =>
+    resolveDefaultSlug(plans, initialPlan),
+  );
+  const [submitting,  setSubmitting]  = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const [step1Data,   setStep1Data]   = useState<Step1Data | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm<Step1Data>({
-    resolver:      zodResolver(step1Schema),
-    mode:          "onBlur",
+    resolver: zodResolver(step1Schema),
+    mode:     "onBlur",
   });
 
+  // Sync selected slug when modal opens with a new initialPlan or plans change
+  useEffect(() => {
+    if (open) {
+      setSelectedSlug(resolveDefaultSlug(plans, initialPlan));
+    }
+  }, [open, initialPlan, plans]);
+
   if (!open) return null;
+
+  // The currently selected PublicPlan object (null-safe)
+  const selectedPlan = plans.find((p) => p.slug === selectedSlug) ?? null;
+
+  // A plan with priceMonthly === 0 means "Contact Sales" (custom / enterprise pricing)
+  const isContactSalesPlan = selectedPlan?.priceMonthly === 0;
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleClose = () => {
     setStep(1);
     setError(null);
     setStep1Data(null);
-    setPlan(initialPlan ?? "growth");
+    setSelectedSlug(resolveDefaultSlug(plans, initialPlan));
     reset();
     onClose();
   };
 
-  // ── Step 1 → 2 ──────────────────────────────────────────────────────────
   const onStep1Submit = (data: Step1Data) => {
     setStep1Data(data);
     setStep(2);
   };
 
-  // ── Step 2 → Stripe ──────────────────────────────────────────────────────
   const onProceedToPayment = async () => {
-    if (!step1Data) return;
+    if (!step1Data || !selectedPlan) return;
 
-    if (selectedPlan === "fleet") {
+    // Plans with $0 pricing go to the "Contact Sales" step instead of Stripe
+    if (isContactSalesPlan) {
       setStep(3);
       return;
     }
@@ -177,11 +208,10 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
     try {
       const { url } = await billingService.createCheckout({
         ...step1Data,
-        plan:       selectedPlan,
+        plan:       selectedSlug,          // slug validated by backend via PlansService
         successUrl: `${origin}/onboarding/success`,
         cancelUrl:  `${origin}/onboarding/cancel`,
       });
-
       window.location.href = url;
     } catch (err: unknown) {
       const msg =
@@ -192,7 +222,8 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
     }
   };
 
-  // ── Shared field style ────────────────────────────────────────────────────
+  // ── Shared styles ────────────────────────────────────────────────────────────
+
   const inputCls =
     "w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 " +
     "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 " +
@@ -200,8 +231,21 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
 
   const labelCls = "block text-xs font-semibold text-slate-600 mb-1.5";
 
-  // ── Progress indicators ────────────────────────────────────────────────────
   const STEPS = ["Your Info", "Choose Plan", "Payment"];
+
+  // ── Step header subtitles ────────────────────────────────────────────────────
+
+  const headerTitle =
+    step === 1 ? "Get Started"
+    : step === 2 ? "Choose Your Plan"
+    : "Contact Sales";
+
+  const headerSubtitle =
+    step === 1 ? "Tell us about your operation"
+    : step === 2 ? "Select the plan that fits your fleet"
+    : `${selectedPlan?.displayName ?? "Custom"} plan · custom enterprise pricing`;
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -213,22 +257,14 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
         className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
         style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.3)" }}
       >
-        {/* Header */}
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div
           className="px-7 py-5 flex items-center justify-between border-b border-slate-100"
           style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)" }}
         >
           <div>
-            <h2 className="text-base font-bold text-white">
-              {step === 1 ? "Get Started" : step === 2 ? "Choose Your Plan" : "Contact Sales"}
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {step === 1
-                ? "Tell us about your operation"
-                : step === 2
-                ? "Select the plan that fits your fleet"
-                : "Fleet plan · custom enterprise pricing"}
-            </p>
+            <h2 className="text-base font-bold text-white">{headerTitle}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{headerSubtitle}</p>
           </div>
           <button
             onClick={handleClose}
@@ -238,11 +274,11 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
           </button>
         </div>
 
-        {/* Step progress bar */}
+        {/* ── Step progress bar ───────────────────────────────────────────── */}
         <div className="px-7 pt-5 pb-0">
           <div className="flex items-center gap-0">
             {STEPS.map((label, idx) => {
-              const n = (idx + 1) as Step;
+              const n      = (idx + 1) as Step;
               const done   = step > n;
               const active = step === n;
               return (
@@ -279,7 +315,7 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
           </div>
         </div>
 
-        {/* Body */}
+        {/* ── Body ───────────────────────────────────────────────────────── */}
         <div className="px-7 py-6">
 
           {/* ── STEP 1: Company info ─────────────────────────────────────── */}
@@ -378,16 +414,25 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
           {/* ── STEP 2: Plan selection ───────────────────────────────────── */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="space-y-3">
-                {(["starter", "growth", "fleet"] as PlanName[]).map((p) => (
-                  <PlanCard
-                    key={p}
-                    plan={p}
-                    selected={selectedPlan === p}
-                    onSelect={() => setPlan(p)}
-                  />
-                ))}
-              </div>
+
+              {plans.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-slate-400">
+                    Unable to load plans at the moment. Please try again shortly.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {plans.map((p) => (
+                    <PlanOptionCard
+                      key={p.slug}
+                      plan={p}
+                      selected={selectedSlug === p.slug}
+                      onSelect={() => setSelectedSlug(p.slug)}
+                    />
+                  ))}
+                </div>
+              )}
 
               {error && (
                 <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-600 font-medium">
@@ -406,7 +451,7 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
                 <button
                   type="button"
                   onClick={() => void onProceedToPayment()}
-                  disabled={submitting}
+                  disabled={submitting || plans.length === 0}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 hover:opacity-90"
                   style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
                 >
@@ -415,7 +460,7 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
                       <Loader2 size={15} className="animate-spin" />
                       Redirecting to Stripe…
                     </>
-                  ) : selectedPlan === "fleet" ? (
+                  ) : isContactSalesPlan ? (
                     <>Contact Sales <ArrowRight size={15} /></>
                   ) : (
                     <>
@@ -432,23 +477,25 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
             </div>
           )}
 
-          {/* ── STEP 3: Fleet / contact sales ────────────────────────────── */}
+          {/* ── STEP 3: Contact Sales (any $0 / custom plan) ─────────────── */}
           {step === 3 && (
             <div className="py-6 text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
-                style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}>
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
+                style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
+              >
                 <Building2 size={24} color="#fff" />
               </div>
+
               <h3 className="text-lg font-bold text-slate-900">
-                Let's build your custom plan
+                Let&apos;s build your custom plan
               </h3>
               <p className="text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
-                Fleet pricing is tailored to your specific needs — number of trucks,
-                integrations, SLA requirements, and more.
+                {selectedPlan?.displayName ?? "Enterprise"} pricing is tailored to your specific
+                needs — number of trucks, integrations, SLA requirements, and more.
               </p>
-              <div
-                className="mx-auto max-w-xs p-4 rounded-2xl border border-slate-200 bg-slate-50 text-left space-y-2"
-              >
+
+              <div className="mx-auto max-w-xs p-4 rounded-2xl border border-slate-200 bg-slate-50 text-left space-y-2">
                 <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                   Your info
                 </p>
@@ -459,13 +506,21 @@ export function RequestAccessModal({ open, onClose, initialPlan }: Props) {
                   </>
                 )}
               </div>
+
               <a
-                href={`mailto:sales@relaytrace.com?subject=Fleet Plan Inquiry — ${step1Data?.companyName ?? ""}&body=Hi, I'm interested in the Fleet plan for ${step1Data?.companyName ?? "my company"}.%0A%0AContact: ${step1Data?.contactName ?? ""}%0AEmail: ${step1Data?.email ?? ""}%0ADrivers: ${step1Data?.driverCount ?? "?"}%0A%0APlease reach out to discuss pricing.`}
+                href={
+                  `mailto:sales@relaytrace.com` +
+                  `?subject=${encodeURIComponent(`${selectedPlan?.displayName ?? "Custom"} Plan Inquiry — ${step1Data?.companyName ?? ""}` )}` +
+                  `&body=${encodeURIComponent(
+                    `Hi,\n\nI'm interested in the ${selectedPlan?.displayName ?? "custom"} plan for ${step1Data?.companyName ?? "my company"}.\n\nContact: ${step1Data?.contactName ?? ""}\nEmail: ${step1Data?.email ?? ""}\nDrivers: ${step1Data?.driverCount ?? "?"}\n\nPlease reach out to discuss pricing.`,
+                  )}`
+                }
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white"
                 style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
               >
                 <Mail size={14} /> Contact Sales
               </a>
+
               <br />
               <button
                 type="button"

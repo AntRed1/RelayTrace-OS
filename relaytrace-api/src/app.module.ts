@@ -12,7 +12,9 @@ import { RolesModule } from './modules/roles/roles.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
-import { AuditModule } from './modules/audit/audit.module';
+import { AuditModule }   from './modules/audit/audit.module';
+import { PlansModule }   from './modules/plans/plans.module';
+import { CacheModule }   from './common/cache/cache.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { QueueModule } from './modules/queue/queue.module';
@@ -41,6 +43,8 @@ import { join } from 'path';
       serveRoot: '/',
       exclude: ['/api*'],
     }),
+    CacheModule,   // global — provides CacheService to all modules
+    PlansModule,
     PrismaModule,
     HealthModule,
     AuthModule,

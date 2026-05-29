@@ -1,0 +1,97 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# NestJS API — app-api-{prefix}
+# ══════════════════════════════════════════════════════════════════════════════
+
+locals {
+  # Shorthand for building Key Vault reference strings.
+  # Format: @Microsoft.KeyVault(VaultName=kv-name;SecretName=secret-name)
+  kv = "VaultName=${var.key_vault_name};SecretName"
+}
+
+resource "azurerm_linux_web_app" "api" {
+  name                = "app-api-${var.prefix}"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.this.id
+
+  # Delegate all outbound traffic through snet-appservice into the VNet.
+  virtual_network_subnet_id = var.subnet_appservice_id
+  https_only                = true
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  site_config {
+    always_on              = var.always_on
+    http2_enabled          = true
+    minimum_tls_version    = "1.2"
+    ftps_state             = "Disabled"
+    vnet_route_all_enabled = true           # Route ALL egress through VNet
+    health_check_path      = var.api_health_check_path
+
+    application_stack {
+      docker_image_name   = "${var.dockerhub_username}/${var.api_image_name}:${var.api_image_tag}"
+      docker_registry_url = "https://index.docker.io"
+    }
+
+    # Allow requests from the Web app. Updated to the Front Door URL in module 07.
+    cors {
+      allowed_origins     = ["https://app-web-${var.prefix}.azurewebsites.net"]
+      support_credentials = true
+    }
+  }
+
+  app_settings = {
+    # ── Runtime ───────────────────────────────────────────────────────────────
+    "NODE_ENV"      = "production"
+    "PORT"          = tostring(var.api_port)
+    "WEBSITES_PORT" = tostring(var.api_port)
+
+    # ── Key Vault references (resolved at startup via Managed Identity) ───────
+    "DATABASE_URL"          = "@Microsoft.KeyVault(${local.kv}=mysql-connection-string)"
+    "REDIS_URL"             = "@Microsoft.KeyVault(${local.kv}=redis-connection-string)"
+    "JWT_ACCESS_SECRET"     = "@Microsoft.KeyVault(${local.kv}=jwt-access-secret)"
+    "JWT_REFRESH_SECRET"    = "@Microsoft.KeyVault(${local.kv}=jwt-refresh-secret)"
+    "STRIPE_SECRET_KEY"     = "@Microsoft.KeyVault(${local.kv}=stripe-secret-key)"
+    "STRIPE_WEBHOOK_SECRET" = "@Microsoft.KeyVault(${local.kv}=stripe-webhook-secret)"
+    "AZURE_STORAGE_ACCOUNT_NAME" = "@Microsoft.KeyVault(${local.kv}=storage-account-name)"
+
+    # ── Communication (ACS Email) ─────────────────────────────────────────────
+    "ACS_CONNECTION_STRING" = "@Microsoft.KeyVault(${local.kv}=acs-connection-string)"
+    "ACS_FROM_ADDRESS"      = var.acs_from_address
+
+    # ── Storage containers (not sensitive — plain values) ─────────────────────
+    "AZURE_STORAGE_CONTAINER_SCREENSHOTS" = var.container_screenshots
+    "AZURE_STORAGE_CONTAINER_OCR"         = var.container_ocr_documents
+    "AZURE_STORAGE_CONTAINER_EXPORTS"     = var.container_exports
+
+    # ── Docker ────────────────────────────────────────────────────────────────
+    # Enables webhook-based continuous deployment from Docker Hub.
+    "DOCKER_ENABLE_CI" = "true"
+
+    # ── Observability ─────────────────────────────────────────────────────────
+    # Secret written by module 08. SDK reads this env var automatically.
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = "@Microsoft.KeyVault(${local.kv}=appinsights-connection-string)"
+  }
+
+  tags = var.tags
+}
+
+# ── RBAC: API app → Key Vault Secrets User ────────────────────────────────────
+# Grants the API's Managed Identity permission to resolve Key Vault references.
+
+resource "azurerm_role_assignment" "api_kv_secrets_user" {
+  scope                = var.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_linux_web_app.api.identity[0].principal_id
+}
+
+# ── RBAC: API app → Storage Blob Data Contributor ─────────────────────────────
+# Grants the API's Managed Identity read/write access to all blob containers.
+
+resource "azurerm_role_assignment" "api_storage_blob" {
+  scope                = var.storage_account_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_web_app.api.identity[0].principal_id
+}

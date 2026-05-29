@@ -9,7 +9,8 @@ export interface PreRegistrationCheckoutDto {
   email: string;
   phone?: string;
   driverCount?: number;
-  plan: "starter" | "growth" | "fleet";
+  /** Plan slug — validated against the Plans table on the backend. */
+  plan: string;
   successUrl: string;
   cancelUrl: string;
 }

@@ -175,8 +175,15 @@ export class CompaniesController {
   @ApiOperation({ summary: 'Aprobar o rechazar solicitud (sin onboarding)' })
   @ApiParam({ name: 'id', description: 'ID de la solicitud' })
   @ApiBody({ type: ProcessRequestDto })
-  processRequest(@Param('id') id: string, @Body() dto: ProcessRequestDto) {
-    return this.companiesService.processRequest(id, dto);
+  processRequest(
+    @Param('id') id: string,
+    @Body() dto: ProcessRequestDto,
+    @CurrentUser() actor,
+  ) {
+    return this.companiesService.processRequest(id, dto, {
+      userId:    actor.id,
+      companyId: actor.companyId,
+    });
   }
 
   @Post('requests/:id/onboard')
@@ -195,6 +202,7 @@ export class CompaniesController {
   async onboard(
     @Param('id') requestId: string,
     @Body() dto: OnboardCompanyDto,
+    @CurrentUser() actor,
   ) {
     const passwordHash = await this.authService.hashPassword(
       dto.temporaryPassword,
@@ -205,6 +213,7 @@ export class CompaniesController {
       dto.adminName,
       passwordHash,
       dto.plan ?? 'starter',
+      { userId: actor.id, companyId: actor.companyId },
     );
   }
 }

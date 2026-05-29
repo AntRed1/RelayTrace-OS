@@ -35,17 +35,45 @@ export class EnvVariables {
   @IsString()
   JWT_REFRESH_EXPIRATION?: string;
 
-  @IsOptional()
-  @IsString()
-  AZURE_STORAGE_CONNECTION_STRING?: string;
+  // ── Azure Blob Storage ─────────────────────────────────────────────────────
+  // Production: set AZURE_STORAGE_ACCOUNT_NAME only — uses Managed Identity.
+  // Dev/Azurite: set both AZURE_STORAGE_ACCOUNT_NAME + AZURE_STORAGE_ACCOUNT_KEY.
 
   @IsOptional()
   @IsString()
-  AZURE_STORAGE_CONTAINER?: string;
+  AZURE_STORAGE_ACCOUNT_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_STORAGE_ACCOUNT_KEY?: string;   // dev/Azurite only — NOT needed in production
+
+  @IsOptional()
+  @IsString()
+  AZURE_STORAGE_CONTAINER_SCREENSHOTS?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_STORAGE_CONTAINER_OCR?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_STORAGE_CONTAINER_EXPORTS?: string;
+
+  // ── Stripe ─────────────────────────────────────────────────────────────────
 
   @IsOptional()
   @IsString()
   STRIPE_SECRET_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  STRIPE_WEBHOOK_SECRET?: string;
+
+  // ── Redis ──────────────────────────────────────────────────────────────────
+
+  @IsOptional()
+  @IsString()
+  REDIS_URL?: string;
 
   @IsOptional()
   @IsString()
@@ -54,6 +82,22 @@ export class EnvVariables {
   @IsOptional()
   @IsString()
   REDIS_PORT?: string;
+
+  // ── ACS Email ──────────────────────────────────────────────────────────────
+
+  @IsOptional()
+  @IsString()
+  ACS_CONNECTION_STRING?: string;
+
+  @IsOptional()
+  @IsString()
+  ACS_FROM_ADDRESS?: string;
+
+  // ── Application Insights ───────────────────────────────────────────────────
+
+  @IsOptional()
+  @IsString()
+  APPLICATIONINSIGHTS_CONNECTION_STRING?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
