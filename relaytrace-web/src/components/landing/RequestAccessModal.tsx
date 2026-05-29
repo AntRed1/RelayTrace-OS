@@ -224,11 +224,7 @@ export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props)
 
   // ── Shared styles ────────────────────────────────────────────────────────────
 
-  const inputCls =
-    "w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 " +
-    "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 " +
-    "placeholder:text-slate-400 transition-all";
-
+  const inputCls = "input";
   const labelCls = "block text-xs font-semibold text-slate-600 mb-1.5";
 
   const STEPS = ["Your Info", "Choose Plan", "Payment"];
@@ -250,12 +246,17 @@ export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props)
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: "rgba(15,23,42,0.7)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(9,14,28,0.75)", backdropFilter: "blur(12px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
-        style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.3)" }}
+        className="w-full max-w-lg rounded-3xl overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,0.97)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255,255,255,0.9)",
+          boxShadow: "0 40px 100px rgba(0,0,0,0.35), 0 0 0 1px rgba(37,99,235,0.08)",
+        }}
       >
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div
@@ -396,11 +397,7 @@ export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props)
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
-              >
+              <button type="submit" className="btn-primary w-full justify-center text-sm py-3">
                 Next: Choose Plan
                 <ArrowRight size={15} />
               </button>
@@ -444,7 +441,7 @@ export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props)
                 <button
                   type="button"
                   onClick={() => { setStep(1); setError(null); }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                  className="btn-secondary flex items-center gap-1.5 text-sm py-2.5 px-4"
                 >
                   <ArrowLeft size={14} /> Back
                 </button>
@@ -452,8 +449,7 @@ export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props)
                   type="button"
                   onClick={() => void onProceedToPayment()}
                   disabled={submitting || plans.length === 0}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg,#22d3ee,#2563eb)" }}
+                  className="btn-primary flex-1 justify-center text-sm py-2.5 disabled:opacity-60"
                 >
                   {submitting ? (
                     <>

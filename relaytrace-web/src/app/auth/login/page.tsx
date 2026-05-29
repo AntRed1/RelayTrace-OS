@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
@@ -44,24 +45,21 @@ export default function LoginPage() {
       <div className="w-full max-w-sm px-4">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+          <Link href="/" className="inline-block hover:opacity-80 transition-opacity duration-300 mb-4">
             <Image
-              src="/images/logo-horizontal.png"
+              src="/images/logo-main.png"
               alt="RelayTrace OS"
-              width={220}
-              height={56}
-              style={{ width: "auto", height: "56px" }}
+              width={360}
+              height={120}
+              style={{ width: "auto", height: "100px" }}
               priority
             />
-          </div>
-          <p className="text-sm text-slate-500">Sign in to your account</p>
+          </Link>
+          <p className="text-sm text-slate-500 mt-4">Sign in to your account</p>
         </div>
 
         {/* Card */}
-        <div
-          className="bg-white rounded-2xl p-6 border border-slate-200"
-          style={{ boxShadow: "var(--rt-shadow)" }}
-        >
+        <div className="gradient-border-card p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">
@@ -71,8 +69,7 @@ export default function LoginPage() {
                 {...register("email")}
                 type="email"
                 placeholder="you@company.com"
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-800 bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:border-blue-500 placeholder:text-slate-400 transition-all"
-                style={{ "--tw-ring-color": "rgb(37 99 235 / .3)" } as React.CSSProperties}
+                className="input"
               />
               {errors.email && (
                 <p className="text-xs text-red-500 mt-1">
@@ -89,7 +86,7 @@ export default function LoginPage() {
                 {...register("password")}
                 type="password"
                 placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-800 bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:border-blue-500 placeholder:text-slate-400 transition-all"
+                className="input"
               />
               {errors.password && (
                 <p className="text-xs text-red-500 mt-1">
@@ -107,11 +104,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
-              style={{
-                background: "var(--rt-gradient)",
-                boxShadow: "0 1px 3px rgb(37 99 235 / .4)",
-              }}
+              className="btn-primary w-full justify-center text-sm py-2.5 disabled:opacity-60"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
               {loading ? "Signing in..." : "Sign in"}

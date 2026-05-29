@@ -4,9 +4,10 @@ export const QUEUE_RECONCILE = 'reconcile-trip';
 export const QUEUE_ALERT = 'send-alert';
 
 export interface OcrJobData {
-  tripId: string;
+  tripId: string;     // DB id of the Trip record
   companyId: string;
-  screenshotUrl: string;
+  blobPath: string;   // Azure Blob path — e.g. "screenshots/{companyId}/{uuid}.jpg"
+                      // The processor uses MSI to generate a SAS URL for Document Intelligence
 }
 
 export interface ReconcileJobData {

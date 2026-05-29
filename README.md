@@ -165,13 +165,15 @@ SaaS Platform (RelayTrace OS)
 | Capa | Tecnología |
 |------|-----------|
 | **Framework** | Next.js 15 (App Router) |
-| **UI** | Tailwind CSS v4 + Lucide Icons |
+| **UI** | Tailwind CSS v4 + Custom Design System |
+| **Diseño** | Glassmorphism + Gradientes Cyan→Blue |
+| **Íconos** | SVG profesionales (Figma) + Lucide Icons |
 | **Estado servidor** | TanStack Query (React Query) |
 | **Estado global** | Zustand (auth store) |
 | **Formularios** | React Hook Form + Zod |
 | **Mapas** | React Leaflet (OpenStreetMap) |
-| **Animaciones** | CSS keyframes + Tailwind transitions |
-| **PWA** | `site.webmanifest` + favicons multi-tamaño |
+| **Animaciones** | Framer Motion + CSS keyframes + Tailwind transitions |
+| **PWA** | `site.webmanifest` + favicon.ico + apple-touch-icon |
 
 ### Infraestructura (`relaytrace-infra`)
 
@@ -693,7 +695,16 @@ chore:    Mantenimiento
 
 ## 📄 Licencia
 
-Propietario — Todos los derechos reservados © 2026 RelayTrace OS
+Este software está protegido bajo la **Anthony R Software License (ARSL) v1.0**.
+
+© 2026 Anthony R. Todos los derechos reservados.
+
+Se permite únicamente la **visualización** del código con fines de evaluación personal.
+Queda estrictamente prohibido: uso comercial, distribución, modificación, ingeniería
+inversa o el uso del software para competir con los productos del Licenciante.
+
+Consulta el archivo [`LICENSE`](./LICENSE) para los términos completos.
+Ley aplicable: República Dominicana — Ley No. 20-00, Ley No. 65-00, Convenio de Berna y TRIPS.
 
 ---
 

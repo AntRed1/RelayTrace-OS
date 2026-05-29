@@ -1,27 +1,45 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { API_DOCS_URL, ROUTES } from "@/config/constants";
 import { ExternalLink } from "lucide-react";
 
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 // ─── Navigation groups ────────────────────────────────────────────────────────
 
-const LINKS = {
+type FooterLink =
+  | { label: string; sectionId: string; external?: false; href?: never }
+  | { label: string; href: string; external?: boolean; sectionId?: never };
+
+const LINKS: Record<string, FooterLink[]> = {
   Product: [
-    { label: "Features",     href: "#features",  external: false },
-    { label: "How it works", href: "#workflow",  external: false },
-    { label: "Pricing",      href: "#pricing",   external: false },
+    { label: "Features",     sectionId: "features" },
+    { label: "How it works", sectionId: "workflow"  },
+    { label: "Pricing",      sectionId: "pricing"   },
   ],
   Platform: [
-    { label: "Driver PWA",       href: "#features",  external: false },
-    { label: "Admin Dashboard",  href: ROUTES.AUTH.LOGIN, external: false },
-    { label: "API Docs",         href: API_DOCS_URL, external: true  },
+    { label: "Driver PWA",      sectionId: "features"         },
+    { label: "Admin Dashboard", href: ROUTES.AUTH.LOGIN        },
+    { label: "API Docs",        href: API_DOCS_URL, external: true },
   ],
   Company: [
-    { label: "Sign In",         href: ROUTES.AUTH.LOGIN, external: false },
-    { label: "Privacy Policy",  href: "#",               external: false },
-    { label: "Terms of Service",href: "#",               external: false },
+    { label: "Sign In",          href: ROUTES.AUTH.LOGIN },
+    { label: "Privacy Policy",   href: "#"               },
+    { label: "Terms of Service", href: "#"               },
   ],
 };
+
+/** Smooth-scroll to a section with navbar offset */
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - 80;
+  window.scrollTo({ top, behavior: "smooth" });
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -36,16 +54,19 @@ export function LandingFooter() {
 
           {/* Brand */}
           <div className="space-y-4">
-            {/* Logo — dark background version */}
-            <Link href="/" className="inline-block">
+            <button
+              onClick={scrollToTop}
+              className="inline-block hover:opacity-80 transition-opacity duration-300"
+              aria-label="Scroll to top"
+            >
               <Image
-                src="/images/logo-dark-full.png"
+                src="/images/logo-main.png"
                 alt="RelayTrace OS"
-                width={160}
-                height={40}
-                style={{ width: "auto", height: "36px" }}
+                width={150}
+                height={150}
+                style={{ width: "auto", height: "80px" }}
               />
-            </Link>
+            </button>
             <p className="text-sm leading-relaxed" style={{ color: "#64748b" }}>
               Operational traceability platform for carriers using Amazon Relay.
             </p>
@@ -64,26 +85,36 @@ export function LandingFooter() {
                 {group}
               </h4>
               <ul className="space-y-2.5">
-                {items.map(({ label, href, external }) => (
-                  <li key={label}>
-                    {external ? (
+                {items.map((item) => (
+                  <li key={item.label}>
+                    {item.external ? (
                       <a
-                        href={href}
+                        href={item.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm transition-colors hover:text-slate-300"
+                        className="inline-flex items-center gap-1 text-sm transition-all duration-200 hover:text-slate-300 hover:translate-x-0.5"
                         style={{ color: "#64748b" }}
                       >
-                        {label}
+                        {item.label}
                         <ExternalLink size={10} className="opacity-60" />
                       </a>
-                    ) : (
-                      <Link
-                        href={href}
-                        className="text-sm transition-colors hover:text-slate-300"
+                    ) : item.sectionId ? (
+                      /* Smooth-scroll anchor */
+                      <button
+                        type="button"
+                        onClick={() => scrollToSection(item.sectionId!)}
+                        className="text-sm transition-all duration-200 hover:text-slate-300 hover:translate-x-0.5 text-left"
                         style={{ color: "#64748b" }}
                       >
-                        {label}
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link
+                        href={item.href!}
+                        className="text-sm transition-all duration-200 hover:text-slate-300 hover:translate-x-0.5"
+                        style={{ color: "#64748b" }}
+                      >
+                        {item.label}
                       </Link>
                     )}
                   </li>

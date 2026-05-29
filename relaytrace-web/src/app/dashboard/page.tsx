@@ -2,6 +2,7 @@
 
 import { TrendingUp, Truck, Users, ScanLine, AlertTriangle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AnimatedPage, AnimatedCard, AnimatedSection, AnimatedButton } from '@/components/ui/animated'
 
 // ─── Mock data (replace with API) ──────────────────────────────────────────
 const STATS = [
@@ -110,7 +111,7 @@ function MapPlaceholder() {
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   return (
-    <div className="p-6 space-y-6">
+    <AnimatedPage className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
@@ -122,15 +123,21 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {STATS.map(s => <StatCard key={s.label} {...s} />)}
-      </div>
+      {/* Stat cards with stagger effect */}
+      <AnimatedSection>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {STATS.map((s, idx) => (
+            <AnimatedCard key={s.label} delay={idx * 0.1}>
+              <StatCard {...s} />
+            </AnimatedCard>
+          ))}
+        </div>
+      </AnimatedSection>
 
       {/* Map + Recent Trips */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
         {/* Map */}
-        <div className="bg-white rounded-[14px] border border-slate-100 overflow-hidden" style={{ height: 420 }}>
+        <AnimatedCard delay={0.3} className="bg-white rounded-[14px] border border-slate-100 overflow-hidden" style={{ height: 420 }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <span className="text-sm font-semibold text-slate-800">Relay Points</span>
             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-[8px] px-3 py-1.5">
@@ -141,13 +148,15 @@ export default function DashboardPage() {
           <div className="p-3 h-[calc(100%-57px)]">
             <MapPlaceholder />
           </div>
-        </div>
+        </AnimatedCard>
 
         {/* Recent Trips */}
-        <div className="bg-white rounded-[14px] border border-slate-100 flex flex-col">
+        <AnimatedCard delay={0.4} className="bg-white rounded-[14px] border border-slate-100 flex flex-col">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <span className="text-sm font-semibold text-slate-800">Recent Trips</span>
-            <button className="btn-secondary text-xs py-1.5 px-3">Recent trips</button>
+            <AnimatedButton className="btn-secondary text-xs py-1.5 px-3">
+              Recent trips
+            </AnimatedButton>
           </div>
 
           {/* Table header */}
@@ -162,7 +171,7 @@ export default function DashboardPage() {
             {RECENT_TRIPS.map((t, i) => (
               <div
                 key={i}
-                className="grid grid-cols-[1fr_auto_auto] items-center px-5 py-3.5 border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                className="grid grid-cols-[1fr_auto_auto] items-center px-5 py-3.5 border-b border-slate-50 hover:bg-slate-50/60 transition-all duration-200 ease-out cursor-pointer"
               >
                 <div>
                   <div className="text-sm font-semibold text-slate-800">{t.id}</div>
@@ -180,19 +189,19 @@ export default function DashboardPage() {
           {/* Pagination */}
           <div className="flex items-center justify-center gap-1 px-5 py-3 border-t border-slate-100">
             {['‹', '‹', '1', '2', '›'].map((p, i) => (
-              <button
+              <AnimatedButton
                 key={i}
                 className={cn(
-                  'w-7 h-7 rounded-[6px] text-xs font-medium transition-colors',
+                  'w-7 h-7 rounded-[6px] text-xs font-medium',
                   p === '1' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
                 )}
               >
                 {p}
-              </button>
+              </AnimatedButton>
             ))}
           </div>
-        </div>
+        </AnimatedCard>
       </div>
-    </div>
+    </AnimatedPage>
   )
 }

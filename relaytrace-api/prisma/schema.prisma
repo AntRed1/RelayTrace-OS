@@ -72,23 +72,35 @@ model Trip {
   driverId String
   driver   User   @relation(fields: [driverId], references: [id])
 
-  tripId        String // ID de Amazon Relay
-  status        String  @default("pending") // pending, confirmed, flagged
-  sourceType    String  @default("manual") // manual, ocr, relay_email
+  tripId        String  // ID de Amazon Relay
+  status        String  @default("pending")  // pending | confirmed | flagged
+  sourceType    String  @default("manual")   // manual | ocr | relay_email
+
+  /// Azure Blob path of the screenshot (e.g. "screenshots/companyId/uuid.jpg").
+  /// TripsService converts this to a SAS URL when returning trip data.
   screenshotUrl String?
+
+  /// OCR pipeline status — updated by the OCR BullMQ processor.
+  /// none       → no screenshot uploaded
+  /// pending    → screenshot uploaded, job enqueued, not yet started
+  /// processing → job picked up by the processor
+  /// completed  → OCR finished (check OCRResult for extracted data)
+  /// failed     → OCR failed after retries (check OCRResult.errorMessage)
+  ocrStatus     String  @default("none")
 
   registeredAt DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   alerts          Alert[]
-  ocrresults      OCRResult[]
+  ocrResults      OCRResult[]
   reconciliations Reconciliation[]
 
   @@unique([companyId, tripId])
   @@index([companyId])
   @@index([driverId])
   @@index([status])
+  @@index([ocrStatus])
 }
 
 model Reconciliation {
@@ -111,16 +123,35 @@ model Reconciliation {
 }
 
 model OCRResult {
-  id              String  @id @default(cuid())
-  tripId          String
-  trip            Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  extractedTripId String?
-  confidenceScore Float   @default(0)
-  rawText         String  @db.Text
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  /// Azure Blob path of the source screenshot used for this OCR attempt.
+  /// Stored separately from Trip.screenshotUrl so the processor can
+  /// re-run OCR without depending on the (potentially expired) SAS URL.
+  blobPath String
+
+  /// Pipeline status — mirrors Trip.ocrStatus for this specific attempt.
+  /// pending | processing | completed | failed
+  status String @default("pending")
+
+  // ── Results (populated when status = completed) ──────────────────────────
+  extractedTripId String? // the Trip ID extracted from the screenshot
+  confidenceScore Float   @default(0) // 0.0 – 1.0
+  rawText         String? @db.Text    // full raw text from Document Intelligence
+
+  // ── Error info (populated when status = failed) ───────────────────────────
+  errorMessage String? @db.Text
+
+  // ── Performance ────────────────────────────────────────────────────────────
+  processingTimeMs Int? // wall-clock ms from job start to finish
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tripId])
+  @@index([status])
 }
 
 model Alert {

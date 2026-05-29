@@ -34,7 +34,7 @@ const STEPS = [
     icon: GitMerge,
     title: "Automatic reconciliation",
     description:
-      "The system cross-checks: does a driver report exist for this Trip ID from the email? Match = confirmed. No match = alert.",
+      "Cross-checks: does a driver report exist for this Trip ID from the email? Match = confirmed. No match = alert.",
   },
   {
     number: "05",
@@ -54,60 +54,100 @@ const STEPS = [
 
 export function WorkflowSection() {
   return (
-    <section id="workflow" className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section
+      id="workflow"
+      className="relative py-28 overflow-hidden mesh-light"
+    >
+      {/* Subtle grid overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-40"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(37,99,235,0.04) 1px,transparent 1px)," +
+            "linear-gradient(90deg,rgba(37,99,235,0.04) 1px,transparent 1px)",
+          backgroundSize: "56px 56px",
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-6">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span
-            className="inline-block text-xs font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
-            style={{ color: "#2563eb", background: "#eff6ff" }}
-          >
+        <div className="text-center max-w-2xl mx-auto mb-20">
+          <span className="eyebrow eyebrow-blue mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
             How it Works
           </span>
-          <h2 className="text-4xl font-extrabold text-slate-900 mb-4">
-            From chaos to full traceability
+          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-4 leading-[1.1] tracking-tight">
+            From chaos to{" "}
+            <span className="gradient-text">full traceability</span>
           </h2>
-          <p className="text-lg text-slate-500">
+          <p className="text-lg text-slate-500 leading-relaxed">
             RelayTrace OS plugs into your existing Relay workflow —
             no changes required to how drivers operate.
           </p>
         </div>
 
-        {/* Steps grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {STEPS.map(({ number, icon: Icon, title, description }) => (
-            <div key={number} className="relative group">
-              {/* Step number */}
-              <div className="flex items-start gap-4">
-                <div className="shrink-0">
-                  <span
-                    className="text-5xl font-black leading-none"
-                    style={{
-                      background: "linear-gradient(135deg,#e2e8f0,#cbd5e1)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    {number}
-                  </span>
-                </div>
-                <div className="pt-1">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-all group-hover:scale-110"
-                    style={{
-                      background: "linear-gradient(135deg,#22d3ee,#2563eb)",
-                    }}
-                  >
-                    <Icon size={18} className="text-white" />
+        {/* Steps — 3 + 3 two-row grid with connectors */}
+        <div className="space-y-5">
+          {[STEPS.slice(0, 3), STEPS.slice(3)].map((row, rowIdx) => (
+            <div key={rowIdx} className="grid md:grid-cols-3 gap-5">
+              {row.map(({ number, icon: Icon, title, description }, colIdx) => {
+                const isLast = colIdx === row.length - 1;
+                return (
+                  <div key={number} className="relative group">
+                    {/* Connector line (right side, not on last) */}
+                    {!isLast && (
+                      <div
+                        className="hidden md:block absolute top-9 left-full w-5 z-10"
+                        style={{ transform: "translateX(-50%)" }}
+                      >
+                        <div
+                          className="h-px w-full"
+                          style={{
+                            background:
+                              "linear-gradient(90deg,rgba(37,99,235,0.3),rgba(34,211,238,0.3))",
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Card */}
+                    <div className="glass-light rounded-2xl p-6 h-full transition-all duration-300">
+                      {/* Step number + icon row */}
+                      <div className="flex items-center gap-3 mb-5">
+                        {/* Step bubble */}
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+                          style={{
+                            background: "linear-gradient(135deg,#22d3ee,#2563eb)",
+                            boxShadow: "0 6px 20px rgba(37,99,235,0.3)",
+                          }}
+                        >
+                          <Icon size={17} className="text-white" />
+                        </div>
+
+                        {/* Large step number (decorative) */}
+                        <span
+                          className="text-4xl font-black leading-none select-none"
+                          style={{
+                            background: "linear-gradient(135deg,#e2e8f0,#f1f5f9)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                          }}
+                        >
+                          {number}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-bold text-slate-900 mb-2 leading-snug">
+                        {title}
+                      </h3>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {description}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-1.5">
-                    {title}
-                  </h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    {description}
-                  </p>
-                </div>
-              </div>
+                );
+              })}
             </div>
           ))}
         </div>

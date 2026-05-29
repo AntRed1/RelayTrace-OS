@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams }     from "next/navigation";
-import Link                    from "next/link";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams }               from "next/navigation";
+import Link                              from "next/link";
 import {
   CheckCircle2,
   Loader2,
@@ -20,9 +20,9 @@ const PLAN_LABELS: Record<string, string> = {
   fleet:   "Fleet",
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Inner component (needs Suspense for useSearchParams) ─────────────────────
 
-export default function OnboardingSuccessPage() {
+function OnboardingSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId    = searchParams.get("session_id");
 
@@ -188,5 +188,24 @@ export default function OnboardingSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Page (wraps content in Suspense for useSearchParams) ─────────────────────
+
+export default function OnboardingSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
+        >
+          <Loader2 size={36} className="animate-spin text-blue-400" />
+        </div>
+      }
+    >
+      <OnboardingSuccessContent />
+    </Suspense>
   );
 }

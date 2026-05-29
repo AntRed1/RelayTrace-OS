@@ -10,13 +10,14 @@ Plataforma SaaS de trazabilidad operativa para carriers que usan **Amazon Relay*
 |---|---|
 | Framework | Next.js 15 (App Router) |
 | Lenguaje | TypeScript 5 |
-| Estilos | Tailwind CSS v4 + CSS variables |
+| Estilos | Tailwind CSS v4 + CSS variables + Custom Design System |
 | Estado servidor | TanStack Query (React Query v5) |
 | Estado cliente | Zustand |
 | Formularios | react-hook-form + zod |
 | Fuente | Plus Jakarta Sans (variable) |
-| Íconos | lucide-react |
+| Íconos | Custom SVG (Figma-generated) + lucide-react |
 | HTTP | axios (`api-client.ts` con interceptor JWT) |
+| Animaciones | Framer Motion (transiciones suaves) |
 
 ---
 
@@ -116,17 +117,27 @@ const { data, isLoading } = useTrips({ page, companyId });
 
 `src/app/page.tsx` es un **Server Component** con ISR (revalidación cada 60 s). Obtiene los planes activos desde la API y los pasa como props estáticas a `LandingPageClient`.
 
+### Design System: Fluid & Modern
+
+- **Glassmorphism**: Tarjetas semi-transparentes con blur backdrop
+- **Gradientes**: Cyan (#22d3ee) → Blue (#2563eb) en toda la app
+- **Sombras**: Glows suaves y sombreados en profundidad
+- **Animaciones**: Transiciones smooth en scroll (smooth-scroll-link), hover effects, y observador de secciones
+- **Tipografía**: Plus Jakarta Sans (variable), con pesos 300-800
+
+### Componentes
+
 | Componente | Contenido |
 |---|---|
-| `LandingNav` | Barra sticky, logo dual, CTA Sign In |
-| `HeroSection` | Hero oscuro con gradiente y mockup |
-| `ProblemSection` | 4 tarjetas de problemas |
-| `WorkflowSection` | Flujo de 6 pasos |
-| `FeaturesSection` | 6 características clave |
-| `PricingSection` | Planes dinámicos desde BD (`PublicPlan[]`) |
-| `CtaSection` | Estadísticas + CTA final |
-| `LandingFooter` | Links y estado del sistema |
-| `RequestAccessModal` | Multi-step dinámico — `priceMonthly === 0` detecta "Contactar ventas" |
+| `LandingNav` | Barra sticky con logo (56px), nav links con smooth scroll, CTA Sign In |
+| `HeroSection` | Hero oscuro con mesh gradient y CTA prominente |
+| `ProblemSection` | 4 tarjetas glass oscuras con iconos profesionales |
+| `WorkflowSection` | Flujo de 6 pasos con conector visual |
+| `FeaturesSection` | Layout asimétrico: 1 featured card grande + 5 pequeñas, iconos SVG |
+| `PricingSection` | Planes glassmorphism con popular highlight y shimmer effect |
+| `CtaSection` | Stats en glass cards + CTA final con orbs ambient |
+| `LandingFooter` | Logo grande (80px), links con smooth scroll al top |
+| `RequestAccessModal` | Multi-step dinámico con glassmorphism y transiciones suaves |
 
 ---
 
@@ -181,15 +192,47 @@ import 'applicationinsights';
 
 ## Imágenes de marca
 
-Todas en `public/images/`:
+Todas en `public/images/` y `public/`:
+
+### Logos
+
+| Archivo | Tamaño | Uso |
+|---|---|---|
+| `logo-main.png` | 100px (login), 56px (navbar), 80px (footer) | Logo principal sin fondo |
+| `logo-icon.png` | Icono R | Símbolo de la marca |
+| `logo-horizontal-pro.png` | Horizontal | Variante horizontal |
+| `logo-dark-pro.png` | Oscuro | Variante fondo oscuro |
+| `logo-vertical-pro.png` | Vertical | Variante vertical |
+
+### Favicon
 
 | Archivo | Uso |
 |---|---|
-| `logo-dark-full.png` | Footer (fondo oscuro) |
-| `logo-horizontal.png` | LandingNav (scroll con fondo blanco) |
-| `logo.png` / `logo-dark.png` | Variantes |
-| `app-mockup.png` | HeroSection |
-| `favicon.svg` | Icono del sitio |
+| `favicon.ico` | Icono navegador + Apps |
+| `favicon.svg` | Vector scalable |
+| `favicon-96x96.png` | 96x96 raster |
+| `apple-touch-icon.png` | iOS home screen |
+
+### Otras
+
+| Archivo | Uso |
+|---|---|
+| `app-mockup.png` | HeroSection mockup |
+
+## Sistema de Íconos
+
+Disponibles en `src/components/ui/`:
+
+- **`landing-icons.tsx`**: Íconos profesionales para secciones Problem/Features (WhatsApp, Spreadsheets, Driver Link, Fraud, etc.)
+- **`relay-icons.tsx`**: Íconos de aplicación con gradiente cyan→blue (Dashboard, Trips, People, OCR, Reconciliation, etc.)
+
+Todos son SVG con gradientes personalizados, 48px de base, escalables vía prop `size`.
+
+```tsx
+import { DashboardIcon, TripsIcon } from "@/components/ui/relay-icons";
+
+<DashboardIcon size={44} />  // renderiza 44px
+```
 
 ---
 

@@ -4,11 +4,11 @@
 # and anything that doesn't belong in any sub-project.
 # ══════════════════════════════════════════════════════════════════════════════
 
-# ── Claude Code ───────────────────────────────────────────────────────────────
-# .claude/ contains local project settings, hooks and conversation cache.
-# CLAUDE.md is intentionally kept — it's project documentation for the AI.
+# ── Claude Code / AI Agents ───────────────────────────────────────────────────
 .claude/
 .claude/settings.local.json
+.agents/
+CLAUDE.md
 
 # ── Environment / secrets ─────────────────────────────────────────────────────
 .env

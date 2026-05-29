@@ -16,19 +16,16 @@ interface Props {
   plans: PublicPlan[];
 }
 
-/**
- * Client wrapper for the landing page.
- *
- * Plans are pre-fetched by the Server Component via ISR and passed as props.
- * This component owns the modal open/close state — no extra API calls needed.
- */
 export function LandingPageClient({ plans }: Props) {
-  // null = modal closed; string = modal open pre-selecting that plan slug
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  // Separate open flag from slug so openModal() with no args still opens the modal
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [selectedSlug, setSelectedSlug] = useState<string | undefined>(undefined);
 
-  /** Opens the modal. Falls back to the most-popular plan when no slug is given. */
-  const openModal  = (slug?: string) => setSelectedPlan(slug ?? null);
-  const closeModal = ()              => setSelectedPlan(null);
+  const openModal  = (slug?: string) => {
+    setSelectedSlug(slug);   // undefined → modal resolves to most-popular plan
+    setModalOpen(true);
+  };
+  const closeModal = () => setModalOpen(false);
 
   return (
     <>
@@ -41,15 +38,10 @@ export function LandingPageClient({ plans }: Props) {
       <CtaSection      onRequestAccess={() => openModal()} />
       <LandingFooter   />
 
-      {/*
-        plans is passed so RequestAccessModal never reads from a hardcoded config.
-        initialPlan is undefined when opened from Nav/Hero/CTA (falls back to isPopular),
-        or a specific slug when opened from a PricingSection CTA button.
-      */}
       <RequestAccessModal
-        open={selectedPlan !== null}
+        open={modalOpen}
         plans={plans}
-        initialPlan={selectedPlan ?? undefined}
+        initialPlan={selectedSlug}
         onClose={closeModal}
       />
     </>

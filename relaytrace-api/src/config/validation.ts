@@ -98,6 +98,38 @@ export class EnvVariables {
   @IsOptional()
   @IsString()
   APPLICATIONINSIGHTS_CONNECTION_STRING?: string;
+
+  // ── Azure Document Intelligence ────────────────────────────────────────────
+
+  @IsOptional()
+  @IsString()
+  AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_DOCUMENT_INTELLIGENCE_KEY?: string;
+
+  // ── Prisma Seed Configuration ──────────────────────────────────────────────
+
+  @IsOptional()
+  @IsString()
+  SEED_COMPANY_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  SEED_COMPANY_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
+  SEED_ADMIN_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  SEED_ADMIN_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
+  SEED_ADMIN_PASSWORD?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

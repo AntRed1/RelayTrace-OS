@@ -57,12 +57,17 @@ export class TripsService {
     if (existing)
       throw new ConflictException('Trip already registered for this company');
 
+    const hasBlobPath = !!createTripDto.screenshotUrl;
+
     const trip = await this.prisma.trip.create({
       data: {
         ...createTripDto,
         driverId,
         companyId,
-        sourceType: createTripDto.screenshotUrl ? 'ocr' : 'manual',
+        // sourceType starts as 'manual'; OCR processor updates it to 'ocr' on success.
+        sourceType: 'manual',
+        // ocrStatus tracks the async pipeline; 'none' when no screenshot was uploaded.
+        ocrStatus: hasBlobPath ? 'pending' : 'none',
       },
       include: {
         driver: { select: DRIVER_SELECT },
@@ -76,15 +81,15 @@ export class TripsService {
       metadata: {
         tripId: trip.id,
         relayTripId: trip.tripId,
-        sourceType: trip.sourceType,
+        hasBlobPath,
       },
     });
 
-    if (createTripDto.screenshotUrl) {
+    if (hasBlobPath) {
       await this.queueProducer.enqueueOcr({
-        tripId: trip.id,
+        tripId:    trip.id,
         companyId,
-        screenshotUrl: createTripDto.screenshotUrl,
+        blobPath:  createTripDto.screenshotUrl!, // blob path stored in screenshotUrl field
       });
     }
 
