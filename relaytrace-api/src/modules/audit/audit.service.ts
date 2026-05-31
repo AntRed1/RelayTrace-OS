@@ -132,7 +132,7 @@ export class AuditService {
       metadata:    this.safeParseJson(log.metadata),
       ipAddress:   log.ipAddress,
       userAgent:   log.userAgent,
-      createdAt:   log.createdAt,
+      createdAt:   this.toIsoString(log.createdAt),
     }));
 
     return {
@@ -151,5 +151,22 @@ export class AuditService {
   private safeParseJson(raw: string): Record<string, unknown> {
     try { return JSON.parse(raw) as Record<string, unknown>; }
     catch { return {}; }
+  }
+
+  /** Normalizes any date representation from the MariaDB adapter to ISO string. */
+  private toIsoString(value: unknown): string | null {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'string') {
+      // MySQL format: "2026-05-30 01:23:45.000" → ISO
+      const normalized = value.replace(' ', 'T');
+      const d = new Date(normalized);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    if (typeof value === 'number' || typeof value === 'bigint') {
+      const d = new Date(Number(value));
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    return null;
   }
 }

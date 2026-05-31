@@ -7,6 +7,7 @@ import { RelayPointsMap }    from "@/components/dashboard/RelayPointsMap";
 import {
   useDashboardSummary,
   useDashboardActivity,
+  useMapPoints,
 } from "@/hooks/use-dashboard";
 import { useAuthStore }      from "@/stores/auth.store";
 import {
@@ -17,22 +18,43 @@ import {
   Loader2,
   Radio,
   ChevronDown,
+  RotateCw,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
   const user         = useAuthStore((s) => s.user);
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const qc           = useQueryClient();
 
-  const { data: summary, isLoading: loadingSummary } = useDashboardSummary();
+  const { data: summary,  isLoading: loadingSummary  } = useDashboardSummary();
   const { data: activity, isLoading: loadingActivity } = useDashboardActivity(8);
+  const { data: mapPoints } = useMapPoints(50);
 
   const trips = activity?.recentTrips ?? [];
 
+  async function refreshDashboard() {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["dashboard", "summary"] }),
+      qc.invalidateQueries({ queryKey: ["dashboard", "activity"] }),
+      qc.invalidateQueries({ queryKey: ["dashboard", "alerts"] }),
+      qc.invalidateQueries({ queryKey: ["dashboard", "map-points"] }),
+    ]);
+  }
+
   return (
     <>
-      <TopBar title="Dashboard" />
+      <TopBar title="Dashboard">
+        <button
+          onClick={refreshDashboard}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+          title="Refresh dashboard"
+        >
+          <RotateCw size={17} />
+        </button>
+      </TopBar>
       <main className="flex-1 p-6 space-y-5 page-enter overflow-auto">
 
         {/* ── Global notice for SUPER_ADMIN ───────────────────────────────── */}
@@ -112,7 +134,7 @@ export default function AdminDashboardPage() {
 
             {/* Map */}
             <div className="flex-1 relative" style={{ minHeight: "340px" }}>
-              <RelayPointsMap />
+              <RelayPointsMap points={mapPoints} />
             </div>
           </div>
 

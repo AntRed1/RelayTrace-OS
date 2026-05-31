@@ -27,11 +27,18 @@ export function formatTime(date: string | Date) {
 }
 
 export function safeFormat(
-  date: string | null | undefined,
+  date: string | Date | null | undefined,
   fmt: string,
 ): string {
   if (!date) return "—";
-  const d = new Date(date);
+  // Normalize MySQL/MariaDB date strings ("2026-05-30 01:23:45" → ISO)
+  const normalized =
+    typeof date === "string" ? date.replace(" ", "T") : date;
+  const d = normalized instanceof Date ? normalized : new Date(normalized);
   if (isNaN(d.getTime())) return "—";
-  return format(d, fmt);
+  try {
+    return format(d, fmt);
+  } catch {
+    return "—";
+  }
 }

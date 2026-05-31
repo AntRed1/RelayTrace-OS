@@ -34,9 +34,10 @@ export const ROUTES = {
     DASHBOARD: "/dispatcher/dashboard",
   },
   DRIVER: {
-    DASHBOARD: "/driver/dashboard",
+    DASHBOARD:     "/driver/dashboard",
     REGISTER_TRIP: "/driver/register-trip",
-    HISTORY: "/driver/history",
+    SETTINGS:      "/driver/settings",
+    HISTORY:       "/driver/history",
   },
 } as const;
 

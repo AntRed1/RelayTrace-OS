@@ -14,9 +14,7 @@ const STATUS_CONFIG: Record<string, { dot: string; label: string; bg: string; te
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns a fake duration string for visual richness (replaced by real data when available) */
-function displayDuration(trip: Trip): string {
-  // In future, derive from actual start/end time. For now show registered time.
+function displayRegisteredAt(trip: Trip): string {
   return safeFormat(trip.registeredAt, "h:mm a") ?? "—";
 }
 
@@ -84,7 +82,7 @@ function TripRow({ trip, idx, total, isSuperAdmin }: {
       <td className="px-3 py-3.5">
         <div className="flex items-center gap-1.5 text-xs text-slate-500">
           <Clock size={11} className="shrink-0" />
-          {displayDuration(trip)}
+          {displayRegisteredAt(trip)}
         </div>
       </td>
 
@@ -143,7 +141,7 @@ export function RecentTripsTable({ trips, isSuperAdmin = false }: Props) {
                 "Trip",
                 "Driver",
                 ...(isSuperAdmin ? ["Company"] : []),
-                "Time",
+                "Registered",
                 "Status",
               ].map((h) => (
                 <th

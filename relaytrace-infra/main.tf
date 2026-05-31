@@ -40,11 +40,11 @@ module "networking" {
 module "keyvault" {
   source = "./modules/02-keyvault"
 
-  prefix               = local.prefix
-  location             = var.location
-  resource_group_name  = azurerm_resource_group.main.name
-  vnet_id              = module.networking.vnet_id
-  subnet_private_id    = module.networking.subnet_private_id
+  prefix              = local.prefix
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  vnet_id             = module.networking.vnet_id
+  subnet_private_id   = module.networking.subnet_private_id
 
   purge_protection_enabled = var.keyvault_purge_protection
   ci_runner_ips            = var.ci_runner_ips
@@ -135,8 +135,11 @@ module "app_service" {
   api_port           = var.api_port
   web_port           = var.web_port
 
-  acs_from_address = var.acs_from_address
-  api_public_url   = "https://${var.api_custom_domain}"
+  acs_from_address     = var.acs_from_address
+  api_public_url       = "https://${var.api_custom_domain}"
+  web_custom_domain    = var.web_custom_domain
+  stripe_price_starter = var.stripe_price_starter
+  stripe_price_growth  = var.stripe_price_growth
 
   tags = local.common_tags
 }
@@ -195,8 +198,8 @@ module "observability" {
   redis_id           = module.data.redis_id
   storage_account_id = module.storage.storage_account_id
 
-  retention_days  = var.log_retention_days
-  daily_quota_gb  = var.log_daily_quota_gb
+  retention_days = var.log_retention_days
+  daily_quota_gb = var.log_daily_quota_gb
 
   tags = local.common_tags
 }

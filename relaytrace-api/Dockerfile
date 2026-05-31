@@ -9,12 +9,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copiar fuentes y compilar
+# Copiar fuentes, generar Prisma client y compilar
 COPY . .
+# DATABASE_URL is required by prisma.config.ts at load time even for generate.
+# A dummy value is safe here — generate only reads the schema, never connects.
+RUN DATABASE_URL="mysql://x:x@localhost:3306/x" npx prisma generate
 RUN npm run build
-
-# Generar Prisma client
-RUN npx prisma generate
 
 # ============================================================
 # Stage 2: Production
@@ -36,6 +36,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/public ./public
+
+# prisma.config.ts holds the datasource URL (env DATABASE_URL); the schema's
+# datasource block has no url, so `prisma migrate deploy` needs this file at runtime.
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Cambiar ownership al usuario no-root
 RUN chown -R nestjs:nodejs /app

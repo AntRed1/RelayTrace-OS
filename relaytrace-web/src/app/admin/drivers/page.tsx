@@ -29,7 +29,9 @@ import {
   ShieldCheck,
   Trash2,
   KeyRound,
+  RotateCw,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +74,7 @@ export default function PeoplePage() {
   const authUser      = useAuthStore((s) => s.user);
   const isSuperAdmin  = authUser?.role === "SUPER_ADMIN";
   const myCompanyId   = authUser?.companyId ?? "";
+  const qc            = useQueryClient();
 
   // ── data ──────────────────────────────────────────────────────────────────
   const { data: planInfo }  = usePlanInfo(!isSuperAdmin);
@@ -99,6 +102,10 @@ export default function PeoplePage() {
   // ── helpers ───────────────────────────────────────────────────────────────
   const selectedCompanyName = companies?.find((c) => c.id === companyId)?.name;
   const colCount = isSuperAdmin ? 6 : 5;
+
+  async function refreshDrivers() {
+    await qc.invalidateQueries({ queryKey: ["users"] });
+  }
 
   // ── submit handlers ───────────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,7 +175,15 @@ export default function PeoplePage() {
 
   return (
     <>
-      <TopBar title="People" />
+      <TopBar title="People">
+        <button
+          onClick={refreshDrivers}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+          title="Refresh drivers"
+        >
+          <RotateCw size={17} />
+        </button>
+      </TopBar>
       <main className="flex-1 p-6 space-y-5 page-enter overflow-auto">
 
         {/* ── Toolbar ────────────────────────────────────────────────────── */}
@@ -388,14 +403,17 @@ export default function PeoplePage() {
                             className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
                             style={{ background: s.bg, color: s.color }}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: s.dot }} />
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full${emp.status === "active" ? " animate-pulse" : ""}`}
+                              style={{ background: s.dot }}
+                            />
                             {s.label}
                           </span>
                         </td>
 
-                        {/* Actions */}
+                        {/* Actions — always visible on touch, hover-reveal on desktop */}
                         <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             {/* Edit */}
                             <button
                               onClick={() => {

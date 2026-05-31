@@ -19,16 +19,16 @@ keyvault_purge_protection = false
 # MySQL
 mysql_admin_username        = "rtadmin"
 mysql_db_name               = "relaytrace"
-mysql_backup_retention_days = 1    # Minimum — dev only
+mysql_backup_retention_days = 1 # Minimum — dev only
 
 # Redis
 redis_sku_name = "Basic"
-redis_capacity = 0    # C0 = 250 MB
+redis_capacity = 0 # C0 = 250 MB
 
 # Front Door
 web_custom_domain = "www.relaytrace.com"
 api_custom_domain = "api.relaytrace.com"
-waf_mode          = "Detection"   # Log-only in dev — flip to Prevention in prod
+waf_mode          = "Detection" # Log-only in dev — flip to Prevention in prod
 
 # Communication (ACS Email)
 email_domain            = "mail.relaytrace.com"
@@ -38,9 +38,11 @@ email_tracking_disabled = true
 
 # App Service
 app_service_sku    = "P1v3"
-always_on          = false   # Save costs in dev
-dockerhub_username = "relaytraceorg"   # Update with your Docker Hub username/org
-api_image_name     = "relaytrace-api"
+always_on          = false     # Save costs in dev
+dockerhub_username   = "antred1"
+stripe_price_starter = "price_1TbWQaLWZ1WnUhF7aJUVxGY9"
+stripe_price_growth  = "price_1TbWQlLWZ1WnUhF7XgcF5hRe"
+api_image_name       = "relaytrace-api"
 api_image_tag      = "latest"
 web_image_name     = "relaytrace-web"
 web_image_tag      = "latest"
@@ -49,12 +51,12 @@ web_port           = 3000
 
 # Storage
 storage_replication_type      = "LRS"
-storage_public_access_enabled = true   # Set false after first apply + PE verified
+storage_public_access_enabled = true # Set false after first apply + PE verified
 blob_soft_delete_days         = 3
 
 # Observability
 log_retention_days = 30
-log_daily_quota_gb = 1   # 1 GB/day cap in dev
+log_daily_quota_gb = 1 # 1 GB/day cap in dev
 
 tags = {
   owner       = "relaytrace-team"

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsEnum,
   IsInt,
+  IsNumber,
   Min,
   Max,
 } from 'class-validator';
@@ -24,6 +25,18 @@ export class CreateTripDto {
   @IsOptional()
   @IsString()
   screenshotUrl?: string;
+
+  @ApiPropertyOptional({ example: 29.762, description: 'GPS latitude del driver al registrar' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: -95.367, description: 'GPS longitude del driver al registrar' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  longitude?: number;
 }
 
 export class UpdateTripDto {

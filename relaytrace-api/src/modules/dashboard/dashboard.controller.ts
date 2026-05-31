@@ -45,21 +45,32 @@ export class DashboardController {
   }
 
   @Get('activity')
-  @ApiOperation({
-    summary: 'Actividad reciente',
-    description:
-      'Últimos viajes registrados con info del conductor y empresa. SUPER_ADMIN ve todos.',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Cantidad de registros (default: 10)',
-  })
+  @ApiOperation({ summary: 'Actividad reciente' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Lista de actividad reciente' })
   getActivity(@Request() req, @Query('limit') limit = 10) {
     const companyId =
       req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
     return this.dashboardService.getActivity(companyId, +limit);
+  }
+
+  @Get('alerts')
+  @ApiOperation({ summary: 'Alertas sin resolver' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Alertas pendientes con info del trip' })
+  getAlerts(@Request() req, @Query('limit') limit = 20) {
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
+    return this.dashboardService.getAlerts(companyId, +limit);
+  }
+
+  @Get('map-points')
+  @ApiOperation({ summary: 'Puntos GPS de trips registrados' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Trips con coordenadas GPS' })
+  getMapPoints(@Request() req, @Query('limit') limit = 50) {
+    const companyId =
+      req.user.role === 'SUPER_ADMIN' ? null : req.user.companyId;
+    return this.dashboardService.getMapPoints(companyId, +limit);
   }
 }

@@ -84,7 +84,7 @@ export class CompaniesController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('COMPANY_ADMIN', 'SUPER_ADMIN')
+  @Roles('COMPANY_ADMIN', 'DISPATCHER', 'DRIVER', 'SUPER_ADMIN')
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Obtener empresa del usuario autenticado' })
   getMyCompany(@CurrentUser('companyId') companyId: string) {

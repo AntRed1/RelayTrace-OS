@@ -88,6 +88,10 @@ model Trip {
   /// failed     → OCR failed after retries (check OCRResult.errorMessage)
   ocrStatus     String  @default("none")
 
+  /// GPS coordinates captured from the driver's device at registration time.
+  latitude  Float?
+  longitude Float?
+
   registeredAt DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

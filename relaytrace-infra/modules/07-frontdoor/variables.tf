@@ -1,5 +1,5 @@
-variable "prefix"               { type = string }
-variable "resource_group_name"  { type = string }
+variable "prefix" { type = string }
+variable "resource_group_name" { type = string }
 
 # App Service hostnames — provided by module 05
 variable "api_app_hostname" {

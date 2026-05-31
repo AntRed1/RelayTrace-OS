@@ -21,6 +21,7 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  RotateCw,
 } from "lucide-react";
 import { TopBar } from "@/components/layouts/TopBar";
 import {
@@ -32,6 +33,7 @@ import { PlanBadge } from "@/components/plan/PlanBadge";
 import { PLAN_CONFIG, PlanName } from "@/config/plan.config";
 import { CompanyRequest, CompanyRequestStatus } from "@/types";
 import { safeFormat } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +83,7 @@ interface OnboardModalProps {
 
 function OnboardModal({ request, onClose }: OnboardModalProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError]   = useState<string | null>(null);
   const [done, setDone] = useState<{
     company: string;
     adminEmail: string;
@@ -91,20 +94,30 @@ function OnboardModal({ request, onClose }: OnboardModalProps) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<OnboardForm>({ resolver: zodResolver(onboardSchema) });
 
+  const selectedPlan = watch("plan");
+
   const onSubmit = async (form: OnboardForm) => {
-    const result = await mutateAsync({
-      id: request.id,
-      dto: {
-        adminEmail:        form.adminEmail,
-        adminName:         form.adminName,
-        temporaryPassword: form.temporaryPassword,
-        plan:              (form.plan ?? "starter") as PlanName,
-      },
-    });
-    setDone({ company: result.company.name, adminEmail: result.admin.email });
+    setSubmitError(null);
+    try {
+      const result = await mutateAsync({
+        id: request.id,
+        dto: {
+          adminEmail:        form.adminEmail,
+          adminName:         form.adminName,
+          temporaryPassword: form.temporaryPassword,
+          plan:              (form.plan ?? "starter") as PlanName,
+        },
+      });
+      setDone({ company: result.company.name, adminEmail: result.admin.email });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+      setSubmitError(Array.isArray(msg) ? msg.join(", ") : (msg ?? "Something went wrong. Please try again."));
+    }
   };
 
   return (
@@ -290,9 +303,11 @@ function OnboardModal({ request, onClose }: OnboardModalProps) {
                         <label
                           key={p}
                           className="cursor-pointer p-2.5 rounded-xl border text-center transition-all"
-                          style={{
-                            borderColor: "#e2e8f0",
-                          }}
+                          style={
+                            selectedPlan === p
+                              ? { borderColor: "#2563eb", background: "#eff6ff" }
+                              : { borderColor: "#e2e8f0", background: "#fff" }
+                          }
                         >
                           <input
                             type="radio"
@@ -315,6 +330,12 @@ function OnboardModal({ request, onClose }: OnboardModalProps) {
                     })}
                   </div>
                 </div>
+
+                {submitError && (
+                  <div className="px-3.5 py-3 rounded-xl text-xs text-red-600 bg-red-50 border border-red-100">
+                    {submitError}
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -480,6 +501,7 @@ export default function OnboardingPage() {
   const [tab,            setTab]            = useState<TabValue>("pending");
   const [onboarding,     setOnboarding]     = useState<CompanyRequest | null>(null);
   const [rejecting,      setRejecting]      = useState<CompanyRequest | null>(null);
+  const qc                                   = useQueryClient();
 
   const { data: requests, isLoading } = useCompanyRequests(
     tab === "all" ? undefined : tab,
@@ -492,9 +514,21 @@ export default function OnboardingPage() {
   const countByStatus = (s: CompanyRequestStatus) =>
     (allRequests ?? []).filter((r) => r.status === s).length;
 
+  async function refreshOnboarding() {
+    await qc.invalidateQueries({ queryKey: ["company-requests"] });
+  }
+
   return (
     <>
-      <TopBar title="Onboarding" />
+      <TopBar title="Onboarding">
+        <button
+          onClick={refreshOnboarding}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+          title="Refresh onboarding"
+        >
+          <RotateCw size={17} />
+        </button>
+      </TopBar>
       <main className="flex-1 p-6 space-y-5 page-enter">
 
         {/* ── Header ──────────────────────────────────────────── */}

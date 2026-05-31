@@ -1,5 +1,5 @@
-variable "prefix"               { type = string }
-variable "resource_group_name"  { type = string }
+variable "prefix" { type = string }
+variable "resource_group_name" { type = string }
 
 # Key Vault — module 02
 variable "key_vault_id" {
@@ -20,7 +20,7 @@ variable "email_domain" {
 }
 
 variable "tracking_disabled" {
-  description = "Disable open/click tracking in emails. Recommended true for B2B / GDPR compliance."
+  description = "Reserved — tracking is configured via Portal after apply (not in provider schema). Kept to avoid breaking the module call signature."
   type        = bool
   default     = true
 }

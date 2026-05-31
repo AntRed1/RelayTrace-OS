@@ -34,7 +34,7 @@ resource "azurerm_key_vault" "this" {
 
   # Allow during bootstrap; tighten to "Deny" + ip_rules after first apply.
   network_acls {
-    bypass         = ["AzureServices"]
+    bypass         = "AzureServices"
     default_action = "Allow"
     ip_rules       = var.ci_runner_ips
   }

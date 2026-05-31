@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Truck,
   Users,
-  ScanLine,
   GitMerge,
   Settings,
   LogOut,
@@ -30,7 +29,6 @@ const BASE_NAV = [
   { label: "Dashboard",      href: ROUTES.ADMIN.DASHBOARD,     icon: LayoutDashboard },
   { label: "Trips",          href: ROUTES.ADMIN.TRIPS,          icon: Truck           },
   { label: "People",         href: ROUTES.ADMIN.DRIVERS,        icon: Users           },
-  { label: "OCR Processing", href: "/admin/ocr",                icon: ScanLine        },
   { label: "Reconciliation", href: ROUTES.ADMIN.RECONCILIATION, icon: GitMerge        },
 ];
 
@@ -155,7 +153,7 @@ export function Sidebar() {
           ) : (
             <Link href="/" className="shrink-0">
               <Image
-                src="/images/logo-horizontal.png"
+                src="/images/logo-main.png"
                 alt="RelayTrace OS"
                 width={160}
                 height={40}

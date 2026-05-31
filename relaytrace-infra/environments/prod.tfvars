@@ -23,7 +23,7 @@ mysql_backup_retention_days = 7
 
 # Redis
 redis_sku_name = "Standard"
-redis_capacity = 1    # C1 = 1 GB, SLA, replication
+redis_capacity = 1 # C1 = 1 GB, SLA, replication
 
 # Front Door
 web_custom_domain = "www.relaytrace.com"
@@ -39,8 +39,10 @@ email_tracking_disabled = true
 # App Service
 app_service_sku    = "P1v3"
 always_on          = true
-dockerhub_username = "relaytraceorg"   # Update with your Docker Hub username/org
-api_image_name     = "relaytrace-api"
+dockerhub_username   = "antred1"
+stripe_price_starter = "price_1TbWQaLWZ1WnUhF7aJUVxGY9"
+stripe_price_growth  = "price_1TbWQlLWZ1WnUhF7XgcF5hRe"
+api_image_name       = "relaytrace-api"
 api_image_tag      = "latest"
 web_image_name     = "relaytrace-web"
 web_image_tag      = "latest"
@@ -49,12 +51,12 @@ web_port           = 3000
 
 # Storage
 storage_replication_type      = "ZRS"
-storage_public_access_enabled = true   # Set false after first apply + PE verified
+storage_public_access_enabled = true # Set false after first apply + PE verified
 blob_soft_delete_days         = 14
 
 # Observability
 log_retention_days = 90
-log_daily_quota_gb = 5   # 5 GB/day cap in prod — raise if needed
+log_daily_quota_gb = 5 # 5 GB/day cap in prod — raise if needed
 
 tags = {
   owner       = "relaytrace-team"

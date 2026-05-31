@@ -2,8 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-
-// ─── Lazy-load the actual map to avoid SSR issues with Leaflet ────────────────
+import { MapPoint } from "@/types";
 
 const MapInner = dynamic(() => import("./RelayPointsMapInner"), {
   ssr: false,
@@ -24,10 +23,11 @@ export interface RoutePoint {
 }
 
 interface Props {
-  /** Optional list of waypoints to display. Falls back to demo data. */
   routes?: RoutePoint[][];
+  points?: MapPoint[];
 }
 
-export function RelayPointsMap({ routes }: Props) {
-  return <MapInner routes={routes} />;
+export function RelayPointsMap({ routes, points }: Props) {
+  const hasRealPoints = points && points.length > 0;
+  return <MapInner routes={routes} points={points} isDemo={!hasRealPoints} />;
 }

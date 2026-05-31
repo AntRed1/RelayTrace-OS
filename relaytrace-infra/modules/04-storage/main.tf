@@ -27,15 +27,15 @@
 # Name rules: 3–24 chars, lowercase alphanumeric only, globally unique.
 
 resource "azurerm_storage_account" "this" {
-  name                = "st${replace(var.prefix, "-", "")}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  account_kind        = "StorageV2"
-  account_tier        = "Standard"
-  account_replication_type = var.storage_replication_type  # LRS dev / ZRS prod
+  name                     = "st${replace(var.prefix, "-", "")}"
+  resource_group_name      = var.resource_group_name
+  location                 = var.location
+  account_kind             = "StorageV2"
+  account_tier             = "Standard"
+  account_replication_type = var.storage_replication_type # LRS dev / ZRS prod
 
   # Blob security
-  allow_nested_items_to_be_public = false   # No anonymous blob access — ever
+  allow_nested_items_to_be_public = false # No anonymous blob access — ever
   https_traffic_only_enabled      = true
   min_tls_version                 = "TLS1_2"
 
@@ -53,7 +53,7 @@ resource "azurerm_storage_account" "this" {
     }
 
     # Versioning — keep last N versions of each blob.
-    versioning_enabled = false  # Enable when audit trail for blobs is needed.
+    versioning_enabled = false # Enable when audit trail for blobs is needed.
   }
 
   tags = var.tags

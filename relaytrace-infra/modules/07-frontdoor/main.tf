@@ -33,7 +33,7 @@ resource "azurerm_cdn_frontdoor_profile" "this" {
   name                     = "fd-${var.prefix}"
   resource_group_name      = var.resource_group_name
   sku_name                 = "Standard_AzureFrontDoor"
-  response_timeout_seconds = 120    # Allow up to 2 min for slow API responses
+  response_timeout_seconds = 120 # Allow up to 2 min for slow API responses
   tags                     = var.tags
 }
 
@@ -50,11 +50,11 @@ resource "azurerm_cdn_frontdoor_endpoint" "this" {
 # ── WAF Policy ────────────────────────────────────────────────────────────────
 
 resource "azurerm_cdn_frontdoor_firewall_policy" "this" {
-  name                              = "waf${replace(var.prefix, "-", "")}"
-  resource_group_name               = var.resource_group_name
-  sku_name                          = "Standard_AzureFrontDoor"
-  enabled                           = true
-  mode                              = var.waf_mode   # "Detection" dev / "Prevention" prod
+  name                = "waf${replace(var.prefix, "-", "")}"
+  resource_group_name = var.resource_group_name
+  sku_name            = "Standard_AzureFrontDoor"
+  enabled             = true
+  mode                = var.waf_mode # "Detection" dev / "Prevention" prod
 
   managed_rule {
     type    = "DefaultRuleSet"
@@ -81,21 +81,15 @@ resource "azurerm_cdn_frontdoor_security_policy" "this" {
     firewall {
       cdn_frontdoor_firewall_policy_id = azurerm_cdn_frontdoor_firewall_policy.this.id
 
+      # A single association block covers all domains; multiple domain sub-blocks
+      # are the correct way to attach the WAF to more than one custom domain.
       association {
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_endpoint.this.id
         }
-        patterns_to_match = ["/*"]
-      }
-
-      association {
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_custom_domain.web.id
         }
-        patterns_to_match = ["/*"]
-      }
-
-      association {
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_custom_domain.api.id
         }

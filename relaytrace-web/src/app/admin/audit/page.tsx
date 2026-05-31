@@ -9,7 +9,9 @@ import {
   Loader2,
   ShieldCheck,
   Building2,
+  RotateCw,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ─── Action badge config ──────────────────────────────────────────────────────
 
@@ -76,6 +78,7 @@ const selectCls =
 export default function AuditPage() {
   const authUser     = useAuthStore((s) => s.user);
   const isSuperAdmin = authUser?.role === "SUPER_ADMIN";
+  const qc           = useQueryClient();
 
   const [page,   setPage]   = useState(1);
   const [action, setAction] = useState("");
@@ -93,6 +96,10 @@ export default function AuditPage() {
   const logs = data?.data ?? [];
   const meta = data?.meta;
 
+  async function refreshLogs() {
+    await qc.invalidateQueries({ queryKey: ["audit"] });
+  }
+
   function resetFilters() {
     setAction(""); setFrom(""); setTo(""); setPage(1);
   }
@@ -101,7 +108,15 @@ export default function AuditPage() {
 
   return (
     <>
-      <TopBar title="Audit Log" />
+      <TopBar title="Audit Log">
+        <button
+          onClick={refreshLogs}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+          title="Refresh logs"
+        >
+          <RotateCw size={17} />
+        </button>
+      </TopBar>
       <main className="flex-1 p-6 space-y-5 page-enter overflow-auto">
 
         {/* ── Toolbar ──────────────────────────────────────────────────── */}
@@ -120,20 +135,24 @@ export default function AuditPage() {
             </select>
 
             {/* Date range */}
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => { setFrom(e.target.value); setPage(1); }}
-              className={selectCls}
-              title="From date"
-            />
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => { setTo(e.target.value); setPage(1); }}
-              className={selectCls}
-              title="To date"
-            />
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 shrink-0">From</span>
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                className={selectCls}
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 shrink-0">To</span>
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                className={selectCls}
+              />
+            </div>
 
             {hasFilters && (
               <button
@@ -214,14 +233,16 @@ export default function AuditPage() {
                       className="hover:bg-slate-50/60 transition-colors"
                       style={{ borderBottom: i < logs.length - 1 ? "1px solid #f8fafc" : "none" }}
                     >
-                      {/* Timestamp */}
+                      {/* Timestamp + IP */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
-                        <p className="text-xs text-slate-700 font-medium">
-                          {safeFormat(log.createdAt, "MMM d, yyyy")}
+                        <p className="text-xs text-slate-700 font-medium font-mono">
+                          {safeFormat(log.createdAt, "MMM d, yyyy · HH:mm:ss")}
                         </p>
-                        <p className="text-[11px] text-slate-400">
-                          {safeFormat(log.createdAt, "HH:mm:ss")}
-                        </p>
+                        {log.ipAddress && (
+                          <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            {log.ipAddress}
+                          </p>
+                        )}
                       </td>
 
                       {/* Action badge */}

@@ -8,8 +8,9 @@
 # MySQL connection string — Prisma DATABASE_URL format:
 #   mysql://USER:PASS@HOST:3306/DB?sslaccept=strict
 #
-# Redis connection string — ioredis URL format (SSL, port 6380):
-#   rediss://:PASS@HOST:6380
+# Redis — the API reads discrete host/password (ioredis + BullMQ), so the
+# hostname and access key are stored as separate secrets rather than a URL.
+# Port (6380) and TLS flag are plain app settings in module 05.
 # ══════════════════════════════════════════════════════════════════════════════
 
 resource "azurerm_key_vault_secret" "mysql_connection_string" {
@@ -21,11 +22,20 @@ resource "azurerm_key_vault_secret" "mysql_connection_string" {
   value = "mysql://${var.mysql_admin_username}:${var.mysql_admin_password}@${azurerm_mysql_flexible_server.this.fqdn}:3306/${azurerm_mysql_flexible_database.app.name}?sslaccept=strict"
 }
 
-resource "azurerm_key_vault_secret" "redis_connection_string" {
-  name         = "redis-connection-string"
+resource "azurerm_key_vault_secret" "redis_host" {
+  name         = "redis-host"
   key_vault_id = var.key_vault_id
   content_type = "text/plain"
   tags         = var.tags
 
-  value = "rediss://:${azurerm_redis_cache.this.primary_access_key}@${azurerm_redis_cache.this.hostname}:${azurerm_redis_cache.this.ssl_port}"
+  value = azurerm_redis_cache.this.hostname
+}
+
+resource "azurerm_key_vault_secret" "redis_password" {
+  name         = "redis-password"
+  key_vault_id = var.key_vault_id
+  content_type = "text/plain"
+  tags         = var.tags
+
+  value = azurerm_redis_cache.this.primary_access_key
 }

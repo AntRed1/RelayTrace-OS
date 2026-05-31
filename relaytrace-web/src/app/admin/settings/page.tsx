@@ -12,7 +12,7 @@ import {
 } from "@/hooks/use-companies";
 import { usePlans }                              from "@/hooks/use-plans";
 import { useChangePassword }                     from "@/hooks/use-users";
-import { FEATURE_LABELS }                        from "@/config/plan.config";
+import { FEATURE_LABELS, FEATURE_MIN_PLAN, PLAN_CONFIG, PlanName } from "@/config/plan.config";
 import {
   Building2,
   Shield,
@@ -20,6 +20,7 @@ import {
   Users,
   Loader2,
   CheckCircle2,
+  Lock,
 } from "lucide-react";
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
@@ -265,66 +266,98 @@ export default function SettingsPage() {
             ) : planInfo ? (
               <div className="space-y-4">
 
-                {/* Current plan header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base font-bold text-slate-900">
-                        {planInfo.displayName}
-                      </span>
-                      <PlanBadge
-                        plan={planInfo.plan}
-                        displayName={planInfo.displayName}
-                        size="md"
-                      />
-                    </div>
-                    <p className="text-sm text-slate-500">
-                      {planInfo.price}
-                      {planInfo.period && ` ${planInfo.period}`}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Driver usage */}
+                {/* Plan card — highlighted */}
                 <div
-                  className="p-4 rounded-xl border"
-                  style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}
+                  className="rounded-2xl p-5 border-2"
+                  style={{
+                    borderColor: PLAN_CONFIG[planInfo.plan as PlanName]?.color ?? "#2563eb",
+                    background:  (PLAN_CONFIG[planInfo.plan as PlanName]?.color ?? "#2563eb") + "0d",
+                  }}
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users size={14} className="text-slate-400" />
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                      Driver Usage
-                    </span>
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg font-extrabold text-slate-900">
+                          {planInfo.displayName}
+                        </span>
+                        <span
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white"
+                          style={{ background: PLAN_CONFIG[planInfo.plan as PlanName]?.color ?? "#2563eb" }}
+                        >
+                          ACTIVE
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold" style={{ color: PLAN_CONFIG[planInfo.plan as PlanName]?.color ?? "#2563eb" }}>
+                        {planInfo.price}{planInfo.period && ` ${planInfo.period}`}
+                      </p>
+                    </div>
+                    <PlanBadge plan={planInfo.plan} displayName={planInfo.displayName} size="md" />
                   </div>
-                  <DriverUsageBar
-                    current={planInfo.currentDrivers}
-                    max={planInfo.maxDrivers}
-                  />
+
+                  {/* Driver usage bar inside card */}
+                  <div className="mb-1">
+                    <div className="flex items-center justify-between text-xs mb-2">
+                      <span className="font-semibold text-slate-600 flex items-center gap-1.5">
+                        <Users size={12} /> Driver seats
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {planInfo.currentDrivers} / {planInfo.maxDrivers === null ? "∞" : planInfo.maxDrivers}
+                      </span>
+                    </div>
+                    <DriverUsageBar current={planInfo.currentDrivers} max={planInfo.maxDrivers} />
+                  </div>
                 </div>
 
-                {/* Feature list */}
+                {/* Features — all features, checked or locked by tier */}
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                    Included Features
+                    Features
                   </p>
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {planInfo.features.map((f) => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="grid grid-cols-1 gap-2">
+                    {(Object.keys(FEATURE_LABELS) as (keyof typeof FEATURE_LABELS)[]).map((key) => {
+                      const included = (planInfo.features as string[]).includes(key);
+                      const minPlan  = FEATURE_MIN_PLAN[key];
+                      return (
                         <div
-                          className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                          style={{ background: "#f0fdf4" }}
+                          key={key}
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl"
+                          style={{ background: included ? "#f0fdf4" : "#f8fafc" }}
                         >
-                          <CheckCircle2 size={10} className="text-emerald-500" />
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                            style={{ background: included ? "#dcfce7" : "#f1f5f9" }}
+                          >
+                            {included
+                              ? <CheckCircle2 size={12} className="text-emerald-500" />
+                              : <Lock size={10} className="text-slate-300" />
+                            }
+                          </div>
+                          <span
+                            className="text-xs flex-1"
+                            style={{ color: included ? "#166534" : "#94a3b8" }}
+                          >
+                            {FEATURE_LABELS[key]}
+                          </span>
+                          {!included && (
+                            <span
+                              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                              style={{
+                                background: (PLAN_CONFIG[minPlan]?.color ?? "#2563eb") + "15",
+                                color:       PLAN_CONFIG[minPlan]?.color ?? "#2563eb",
+                              }}
+                            >
+                              {PLAN_CONFIG[minPlan]?.displayName}+
+                            </span>
+                          )}
                         </div>
-                        {FEATURE_LABELS[f as keyof typeof FEATURE_LABELS] ?? f}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
                 {!isAdmin && (
-                  <p className="text-xs text-slate-400">
-                    Contact your administrator to change the plan.
+                  <p className="text-xs text-slate-400 text-center pt-1">
+                    Contact your administrator to change your plan.
                   </p>
                 )}
               </div>

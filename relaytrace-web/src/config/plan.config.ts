@@ -62,16 +62,16 @@ export const PLAN_CONFIG: Record<PlanName, PlanDefinition> = {
 };
 
 export const FEATURE_LABELS: Record<PlanFeature, string> = {
-  manual_trip:          'Registro manual de viajes',
-  pwa:                  'App móvil para conductores',
-  admin_dashboard:      'Panel de administración',
-  audit_trail:          'Historial de auditoría',
-  ocr:                  'OCR: captura de Trip ID por foto',
-  reconciliation:       'Motor de conciliación con emails de Relay',
-  anti_fraud:           'Alertas antifraude en tiempo real',
-  dispatcher_role:      'Rol de despachador',
-  custom_integrations:  'Integraciones personalizadas',
-  multi_account:        'Soporte multi-cuenta Relay',
+  manual_trip:          'Manual trip registration',
+  pwa:                  'Driver mobile app (PWA)',
+  admin_dashboard:      'Admin dashboard',
+  audit_trail:          'Audit trail',
+  ocr:                  'OCR: auto-extract Trip ID from photo',
+  reconciliation:       'Relay email reconciliation engine',
+  anti_fraud:           'Real-time anti-fraud alerts',
+  dispatcher_role:      'Dispatcher role',
+  custom_integrations:  'Custom integrations',
+  multi_account:        'Multi-account Relay support',
   white_label:          'White-label',
 };
 

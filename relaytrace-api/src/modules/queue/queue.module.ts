@@ -17,8 +17,11 @@ import {
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         connection: {
-          host: config.get<string>('REDIS_HOST'),
-          port: config.get<number>('REDIS_PORT'),
+          host:     config.get<string>('REDIS_HOST'),
+          port:     config.get<number>('REDIS_PORT'),
+          password: config.get<string>('REDIS_PASSWORD') || undefined,
+          // Azure Cache for Redis is TLS-only (port 6380). Enable via REDIS_TLS=true.
+          ...(config.get<string>('REDIS_TLS') === 'true' ? { tls: {} } : {}),
         },
       }),
     }),

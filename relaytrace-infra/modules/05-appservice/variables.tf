@@ -1,19 +1,19 @@
-variable "prefix"               { type = string }
-variable "location"             { type = string }
-variable "resource_group_name"  { type = string }
+variable "prefix" { type = string }
+variable "location" { type = string }
+variable "resource_group_name" { type = string }
 
 # Networking — module 01
 variable "subnet_appservice_id" { type = string }
 
 # Key Vault — module 02
-variable "key_vault_id"   { type = string }
+variable "key_vault_id" { type = string }
 variable "key_vault_name" { type = string }
 
 # Storage — module 04
-variable "storage_account_id"     { type = string }
-variable "container_screenshots"  { type = string }
-variable "container_ocr_documents"{ type = string }
-variable "container_exports"      { type = string }
+variable "storage_account_id" { type = string }
+variable "container_screenshots" { type = string }
+variable "container_ocr_documents" { type = string }
+variable "container_exports" { type = string }
 
 # ── App Service Plan ──────────────────────────────────────────────────────────
 
@@ -80,6 +80,24 @@ variable "api_public_url" {
   default     = ""
 }
 
+variable "web_custom_domain" {
+  description = "Web custom domain (e.g. www.relaytrace.com). Used to build APP_URL and ALLOWED_ORIGINS."
+  type        = string
+  default     = ""
+}
+
+variable "stripe_price_starter" {
+  description = "Stripe Price ID for the Starter plan (recurring monthly)."
+  type        = string
+  default     = ""
+}
+
+variable "stripe_price_growth" {
+  description = "Stripe Price ID for the Growth plan (recurring monthly)."
+  type        = string
+  default     = ""
+}
+
 variable "acs_from_address" {
   description = "Full email address used as sender (e.g. noreply@mail.relaytrace.com)."
   type        = string
@@ -87,9 +105,9 @@ variable "acs_from_address" {
 }
 
 variable "api_health_check_path" {
-  description = "HTTP path App Service polls to determine API health."
+  description = "HTTP path App Service polls to determine API health. The API mounts routes under the global prefix + URI version (api/v1)."
   type        = string
-  default     = "/health"
+  default     = "/api/v1/health"
 }
 
 variable "tags" {

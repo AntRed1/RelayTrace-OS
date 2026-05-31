@@ -23,7 +23,7 @@ resource "azurerm_log_analytics_workspace" "this" {
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
   retention_in_days   = var.retention_days
-  daily_quota_gb      = var.daily_quota_gb   # Cost guard — adjust per env
+  daily_quota_gb      = var.daily_quota_gb # Cost guard — adjust per env
   tags                = var.tags
 }
 

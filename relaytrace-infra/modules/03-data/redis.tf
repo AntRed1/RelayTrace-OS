@@ -32,16 +32,16 @@ resource "azurerm_redis_cache" "this" {
   location            = var.location
   resource_group_name = var.resource_group_name
 
-  sku_name = var.redis_sku_name  # "Basic" | "Standard"
+  sku_name = var.redis_sku_name # "Basic" | "Standard"
   family   = "C"
-  capacity = var.redis_capacity  # 0 = 250 MB, 1 = 1 GB
+  capacity = var.redis_capacity # 0 = 250 MB, 1 = 1 GB
 
-  enable_non_ssl_port           = false   # port 6379 disabled
+  non_ssl_port_enabled          = false # port 6379 disabled; TLS-only on 6380
   minimum_tls_version           = "1.2"
-  public_network_access_enabled = false   # PE-only access
+  public_network_access_enabled = false # PE-only access
 
   redis_configuration {
-    maxmemory_policy = "allkeys-lru"      # evict LRU keys when memory full
+    maxmemory_policy = "allkeys-lru" # evict LRU keys when memory full
   }
 
   tags = var.tags

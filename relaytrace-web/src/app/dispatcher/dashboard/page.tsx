@@ -49,7 +49,14 @@ export default function DispatcherDashboardPage() {
             />
           </div>
         )}
-        {!la && <RecentTripsTable trips={activity?.recentTrips ?? []} />}
+        {la ? (
+          <div className="bg-white rounded-2xl border border-slate-100 flex items-center justify-center py-12"
+            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <Loader2 size={18} className="animate-spin text-blue-400" />
+          </div>
+        ) : (
+          <RecentTripsTable trips={activity?.recentTrips ?? []} />
+        )}
       </main>
     </>
   );

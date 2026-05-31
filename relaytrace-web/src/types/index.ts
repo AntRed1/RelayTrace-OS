@@ -67,6 +67,7 @@ export interface CompanyRequest {
 // ============================================================
 export type TripStatus = "pending" | "confirmed" | "flagged";
 export type TripSourceType = "manual" | "ocr" | "relay_email";
+export type OcrStatus = "none" | "pending" | "processing" | "completed" | "failed";
 
 export interface CompanySummary {
   id: string;
@@ -82,7 +83,10 @@ export interface Trip {
   tripId: string;
   status: TripStatus;
   sourceType: TripSourceType;
+  ocrStatus: OcrStatus;
   screenshotUrl?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   registeredAt: string;
   createdAt: string;
   updatedAt: string;
@@ -92,6 +96,27 @@ export interface Trip {
 export interface CreateTripPayload {
   tripId: string;
   screenshotUrl?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface DashboardAlert {
+  id: string;
+  companyId: string;
+  tripId: string;
+  trip: { id: string; tripId: string };
+  alertType: AlertType;
+  resolved: boolean;
+  createdAt: string;
+}
+
+export interface MapPoint {
+  id: string;
+  tripId: string;
+  latitude: number;
+  longitude: number;
+  registeredAt: string;
+  driver: { name: string };
 }
 
 // ============================================================

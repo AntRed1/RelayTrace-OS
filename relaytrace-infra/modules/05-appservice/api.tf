@@ -27,8 +27,14 @@ resource "azurerm_linux_web_app" "api" {
     http2_enabled          = true
     minimum_tls_version    = "1.2"
     ftps_state             = "Disabled"
-    vnet_route_all_enabled = true           # Route ALL egress through VNet
+    vnet_route_all_enabled = true # Route ALL egress through VNet
     health_check_path      = var.api_health_check_path
+
+    # Apply pending Prisma migrations before booting the API.
+    # `migrate deploy` is idempotent (only applies un-applied migrations) and
+    # acquires a DB advisory lock, so concurrent instances are safe. Requires
+    # the Prisma CLI + prisma.config.ts to be present in the image (see Dockerfile).
+    app_command_line = "sh -c 'npx prisma migrate deploy && node dist/src/main.js'"
 
     application_stack {
       docker_image_name   = "${var.dockerhub_username}/${var.api_image_name}:${var.api_image_tag}"
@@ -49,13 +55,20 @@ resource "azurerm_linux_web_app" "api" {
     "WEBSITES_PORT" = tostring(var.api_port)
 
     # ── Key Vault references (resolved at startup via Managed Identity) ───────
-    "DATABASE_URL"          = "@Microsoft.KeyVault(${local.kv}=mysql-connection-string)"
-    "REDIS_URL"             = "@Microsoft.KeyVault(${local.kv}=redis-connection-string)"
-    "JWT_ACCESS_SECRET"     = "@Microsoft.KeyVault(${local.kv}=jwt-access-secret)"
-    "JWT_REFRESH_SECRET"    = "@Microsoft.KeyVault(${local.kv}=jwt-refresh-secret)"
-    "STRIPE_SECRET_KEY"     = "@Microsoft.KeyVault(${local.kv}=stripe-secret-key)"
-    "STRIPE_WEBHOOK_SECRET" = "@Microsoft.KeyVault(${local.kv}=stripe-webhook-secret)"
+    "DATABASE_URL"               = "@Microsoft.KeyVault(${local.kv}=mysql-connection-string)"
+    "JWT_SECRET"                 = "@Microsoft.KeyVault(${local.kv}=jwt-access-secret)"
+    "JWT_REFRESH_SECRET"         = "@Microsoft.KeyVault(${local.kv}=jwt-refresh-secret)"
+    "STRIPE_SECRET_KEY"          = "@Microsoft.KeyVault(${local.kv}=stripe-secret-key)"
+    "STRIPE_WEBHOOK_SECRET"      = "@Microsoft.KeyVault(${local.kv}=stripe-webhook-secret)"
     "AZURE_STORAGE_ACCOUNT_NAME" = "@Microsoft.KeyVault(${local.kv}=storage-account-name)"
+
+    # ── Redis ─────────────────────────────────────────────────────────────────
+    # API reads discrete host/port/password (ioredis + BullMQ), not a URL.
+    # Azure Cache for Redis is TLS-only on 6380 → REDIS_TLS enables ioredis tls.
+    "REDIS_HOST"     = "@Microsoft.KeyVault(${local.kv}=redis-host)"
+    "REDIS_PORT"     = "6380"
+    "REDIS_PASSWORD" = "@Microsoft.KeyVault(${local.kv}=redis-password)"
+    "REDIS_TLS"      = "true"
 
     # ── Communication (ACS Email) ─────────────────────────────────────────────
     "ACS_CONNECTION_STRING" = "@Microsoft.KeyVault(${local.kv}=acs-connection-string)"
@@ -65,6 +78,16 @@ resource "azurerm_linux_web_app" "api" {
     "AZURE_STORAGE_CONTAINER_SCREENSHOTS" = var.container_screenshots
     "AZURE_STORAGE_CONTAINER_OCR"         = var.container_ocr_documents
     "AZURE_STORAGE_CONTAINER_EXPORTS"     = var.container_exports
+
+    # ── Stripe Price IDs (not sensitive — plain values) ──────────────────────
+    "STRIPE_PRICE_STARTER" = var.stripe_price_starter
+    "STRIPE_PRICE_GROWTH"  = var.stripe_price_growth
+
+    # ── Application URL (used in outbound email links) ────────────────────────
+    "APP_URL" = var.api_public_url != "" ? "https://${var.web_custom_domain}" : "https://app-web-${var.prefix}.azurewebsites.net"
+
+    # ── CORS (allows the web app through the NestJS CORS middleware) ──────────
+    "ALLOWED_ORIGINS" = var.api_public_url != "" ? "https://${var.web_custom_domain},https://app-web-${var.prefix}.azurewebsites.net" : "https://app-web-${var.prefix}.azurewebsites.net"
 
     # ── Docker ────────────────────────────────────────────────────────────────
     # Enables webhook-based continuous deployment from Docker Hub.

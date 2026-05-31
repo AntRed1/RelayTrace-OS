@@ -26,6 +26,7 @@ export const tripsService = {
     status?: string;
     driverId?: string;
     companyId?: string;
+    tripId?: string;
   }): Promise<PaginatedResponse<Trip>> {
     const { data } = await apiClient.get<ApiResponse<PaginatedResponse<Trip>>>(
       "/trips",

@@ -84,6 +84,18 @@ variable "stripe_webhook_secret" {
   sensitive   = true
 }
 
+variable "stripe_price_starter" {
+  description = "Stripe Price ID for the Starter plan. Not sensitive — set in tfvars."
+  type        = string
+  default     = ""
+}
+
+variable "stripe_price_growth" {
+  description = "Stripe Price ID for the Growth plan. Not sensitive — set in tfvars."
+  type        = string
+  default     = ""
+}
+
 # ── MySQL ──────────────────────────────────────────────────────────────────────
 
 variable "mysql_admin_username" {

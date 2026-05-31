@@ -14,10 +14,14 @@ export const redisCacheProvider: FactoryProvider<Redis> = {
   useFactory: (config: ConfigService): Redis => {
     const logger = new Logger('RedisCacheProvider');
 
+    // Azure Cache for Redis is TLS-only (port 6380). Enable via REDIS_TLS=true.
+    const useTls = config.get<string>('REDIS_TLS') === 'true';
+
     const client = new Redis({
       host:          config.get<string>('REDIS_HOST', 'localhost'),
       port:          config.get<number>('REDIS_PORT', 6379),
       password:      config.get<string>('REDIS_PASSWORD') || undefined,
+      ...(useTls ? { tls: {} } : {}),
       lazyConnect:   true,
       enableReadyCheck: false,
       maxRetriesPerRequest: null,

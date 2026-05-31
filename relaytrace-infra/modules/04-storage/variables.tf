@@ -1,9 +1,9 @@
-variable "prefix"               { type = string }
-variable "location"             { type = string }
-variable "resource_group_name"  { type = string }
+variable "prefix" { type = string }
+variable "location" { type = string }
+variable "resource_group_name" { type = string }
 
 # Networking — provided by module 01
-variable "vnet_id"          { type = string }
+variable "vnet_id" { type = string }
 variable "subnet_private_id" { type = string }
 
 # Key Vault — provided by module 02

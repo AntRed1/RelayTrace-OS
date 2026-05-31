@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,7 +13,11 @@ import {
   ImagePlus,
   X,
   Truck,
+  MapPin,
+  ArrowLeft,
 } from "lucide-react";
+import Link from "next/link";
+import { ROUTES } from "@/config/constants";
 
 // ─── Schema (no URL field — file is managed separately) ──────────────────────
 
@@ -21,7 +25,7 @@ const schema = z.object({
   tripId: z
     .string()
     .min(3, "Trip ID required")
-    .regex(/^T-\d+$/i, "Format: T-XXXXXXXXX"),
+    .regex(/^(?:T-\d{9,12}|TBA\d{9,12})$/i, "Format: T-XXXXXXXXX or TBA123456789"),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -38,8 +42,27 @@ export default function RegisterTripPage() {
   const [uploadPct, setUploadPct]  = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // ── GPS state ───────────────────────────────────────────────────────────────
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<"idle" | "acquiring" | "ok" | "denied">("idle");
+
   // ── Form state ──────────────────────────────────────────────────────────────
   const [success, setSuccess] = useState(false);
+
+  // Request GPS on mount so permission dialog appears before submit
+  useEffect(() => {
+    if (!navigator.geolocation) { setGpsStatus("denied"); return; }
+    setGpsStatus("acquiring");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGpsStatus("ok");
+      },
+      () => setGpsStatus("denied"),
+      { timeout: 10000, maximumAge: 300000 },
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     register,
@@ -83,7 +106,6 @@ export default function RegisterTripPage() {
   const onSubmit = async (data: FormData) => {
     let screenshotUrl: string | undefined;
 
-    // Upload image first if one is selected
     if (file) {
       try {
         setUploading(true);
@@ -99,7 +121,12 @@ export default function RegisterTripPage() {
       }
     }
 
-    await mutateAsync({ tripId: data.tripId, screenshotUrl });
+    await mutateAsync({
+      tripId:    data.tripId,
+      screenshotUrl,
+      latitude:  gpsCoords?.lat,
+      longitude: gpsCoords?.lng,
+    });
     setSuccess(true);
     reset();
     removeFile();
@@ -109,8 +136,19 @@ export default function RegisterTripPage() {
   const busy = isPending || uploading;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-50 p-4">
+      <div className="w-full max-w-md mx-auto">
+
+        {/* ── Back button ─────────────────────────────────────────────────── */}
+        <div className="mb-6 pt-2">
+          <Link
+            href={ROUTES.DRIVER.DASHBOARD}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back to dashboard
+          </Link>
+        </div>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="text-center mb-8">
@@ -155,7 +193,7 @@ export default function RegisterTripPage() {
               </label>
               <input
                 {...register("tripId")}
-                placeholder="T-123456789"
+                placeholder="T-123456789 or TBA123456789"
                 autoCapitalize="characters"
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-800 bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400 transition-all font-mono"
               />
@@ -165,7 +203,7 @@ export default function RegisterTripPage() {
                 </p>
               )}
               <p className="text-xs text-slate-400 mt-1">
-                Found in your Amazon Relay app confirmation screen
+                Found in your Amazon Relay app · formats: T-XXXXXXXXX or TBA123456789
               </p>
             </div>
 
@@ -293,6 +331,29 @@ export default function RegisterTripPage() {
                 OCR will auto-extract Trip ID from the screenshot
               </p>
             </div>
+
+            {/* GPS status indicator — always visible once page loads */}
+            {gpsStatus !== "idle" && (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
+                style={
+                  gpsStatus === "ok"
+                    ? { background: "#f0fdf4", color: "#16a34a" }
+                    : gpsStatus === "denied"
+                    ? { background: "#fff7ed", color: "#92400e" }
+                    : { background: "#eff6ff", color: "#2563eb" }
+                }
+              >
+                {gpsStatus === "acquiring" ? (
+                  <Loader2 size={12} className="animate-spin shrink-0" />
+                ) : (
+                  <MapPin size={12} className="shrink-0" />
+                )}
+                {gpsStatus === "acquiring" && "Detecting your location…"}
+                {gpsStatus === "ok"      && `Location ready (${gpsCoords?.lat.toFixed(4)}, ${gpsCoords?.lng.toFixed(4)})`}
+                {gpsStatus === "denied"  && "Location unavailable — trip will register without GPS"}
+              </div>
+            )}
 
             {/* Submit */}
             <button

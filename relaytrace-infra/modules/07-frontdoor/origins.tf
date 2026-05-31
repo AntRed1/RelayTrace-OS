@@ -22,7 +22,7 @@ resource "azurerm_cdn_frontdoor_origin_group" "api" {
   }
 
   health_probe {
-    path                = "/health"
+    path                = "/api/v1/health"
     protocol            = "Https"
     request_type        = "HEAD"
     interval_in_seconds = 30

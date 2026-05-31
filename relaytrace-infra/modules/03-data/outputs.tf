@@ -45,7 +45,12 @@ output "secret_uri_mysql_connection_string" {
   value       = azurerm_key_vault_secret.mysql_connection_string.versionless_id
 }
 
-output "secret_uri_redis_connection_string" {
-  description = "Versionless Key Vault URI for the Redis connection string secret."
-  value       = azurerm_key_vault_secret.redis_connection_string.versionless_id
+output "secret_uri_redis_host" {
+  description = "Versionless Key Vault URI for the Redis hostname secret."
+  value       = azurerm_key_vault_secret.redis_host.versionless_id
+}
+
+output "secret_uri_redis_password" {
+  description = "Versionless Key Vault URI for the Redis access key secret."
+  value       = azurerm_key_vault_secret.redis_password.versionless_id
 }

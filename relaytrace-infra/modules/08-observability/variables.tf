@@ -1,6 +1,6 @@
-variable "prefix"               { type = string }
-variable "location"             { type = string }
-variable "resource_group_name"  { type = string }
+variable "prefix" { type = string }
+variable "location" { type = string }
+variable "resource_group_name" { type = string }
 
 # Key Vault — module 02
 variable "key_vault_id" {
@@ -9,11 +9,11 @@ variable "key_vault_id" {
 }
 
 # Resource IDs for diagnostic settings — modules 03, 04, 05
-variable "api_app_id"        { type = string }
-variable "web_app_id"        { type = string }
-variable "mysql_server_id"   { type = string }
-variable "redis_id"          { type = string }
-variable "storage_account_id"{ type = string }
+variable "api_app_id" { type = string }
+variable "web_app_id" { type = string }
+variable "mysql_server_id" { type = string }
+variable "redis_id" { type = string }
+variable "storage_account_id" { type = string }
 
 # Workspace settings
 variable "retention_days" {
@@ -29,7 +29,7 @@ variable "retention_days" {
 variable "daily_quota_gb" {
   description = "Daily log ingestion cap in GB. Prevents unexpected cost spikes. Use -1 for unlimited."
   type        = number
-  default     = 1  # 1 GB/day — raise for prod
+  default     = 1 # 1 GB/day — raise for prod
 }
 
 variable "tags" {

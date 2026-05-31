@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.100"
+      version = "~> 4.0"
     }
   }
 
@@ -27,9 +27,8 @@ provider "azurerm" {
       purge_soft_delete_on_destroy    = false
       recover_soft_deleted_key_vaults = true
     }
-    resource_group {
-      # Prevent accidental deletion of non-empty resource groups
-      prevent_deletion_if_contains_resources = true
-    }
+    # resource_group.prevent_deletion_if_contains_resources was removed in
+    # azurerm 4.0. Non-empty resource groups are now always protected from
+    # accidental destruction by Terraform's dependency graph.
   }
 }

@@ -8,23 +8,40 @@ import {
   useReconciliationSummary,
 } from "@/hooks/use-reconciliation";
 import { format } from "date-fns";
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertCircle, RotateCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ReconciliationPage() {
   const [page, setPage] = useState(1);
+  const qc = useQueryClient();
   const { data: summary } = useReconciliationSummary();
   const { data, isLoading } = useReconciliation(page, 15);
 
   const items = data?.data ?? [];
   const meta = data?.meta;
 
+  async function refreshReconciliation() {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["reconciliation"] }),
+      qc.invalidateQueries({ queryKey: ["reconciliation", "summary"] }),
+    ]);
+  }
+
   return (
     <PlanGate feature="reconciliation">
       <>
-        <TopBar title="Reconciliation" />
-      <main className="flex-1 p-6 space-y-5 page-enter">
+        <TopBar title="Reconciliation">
+          <button
+            onClick={refreshReconciliation}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+            title="Refresh reconciliation"
+          >
+            <RotateCw size={17} />
+          </button>
+        </TopBar>
+        <main className="flex-1 p-6 space-y-5 page-enter">
         {/* Summary cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             {
               label: "Total Processed",
@@ -208,5 +225,6 @@ export default function ReconciliationPage() {
         </main>
       </>
     </PlanGate>
+
   );
 }

@@ -11,7 +11,7 @@
 resource "random_password" "mysql_admin" {
   length           = 20
   special          = true
-  override_special = "!#%&*()-_=+[]{}:?"   # chars safe in MySQL connection strings
+  override_special = "!#%&*()-_=+[]{}:?" # chars safe in MySQL connection strings
   min_upper        = 2
   min_lower        = 2
   min_numeric      = 2
@@ -88,6 +88,7 @@ resource "azurerm_key_vault_secret" "stripe_webhook_secret" {
 }
 
 # ── Placeholders populated by later modules ───────────────────────────────────
-# redis-connection-string   → module 03 (data)
+# redis-host                → module 03 (data)
+# redis-password            → module 03 (data)
 # mysql-connection-string   → module 03 (data)
 # acs-connection-string     → module 06 (communication)

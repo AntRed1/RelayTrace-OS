@@ -44,8 +44,8 @@ resource "azurerm_email_communication_service_domain" "this" {
 
   domain_management = "CustomerManaged"
 
-  # Disable open/click tracking for privacy (recommended for B2B SaaS).
-  user_engagement_tracking_disabled = var.tracking_disabled
+  # user_engagement_tracking_disabled is not in the azurerm provider schema.
+  # Configure tracking via Portal → Email domain → Tracking settings after apply.
 
   tags = var.tags
 }

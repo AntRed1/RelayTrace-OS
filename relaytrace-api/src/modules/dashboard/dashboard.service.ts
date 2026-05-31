@@ -34,7 +34,6 @@ export class DashboardService {
   }
 
   async getActivity(companyId: string | null, limit = 10) {
-    // companyId=null → SUPER_ADMIN ve trips de todas las empresas
     const where = companyId ? { companyId } : {};
 
     const recentTrips = await this.prisma.trip.findMany({
@@ -48,5 +47,55 @@ export class DashboardService {
     });
 
     return { recentTrips };
+  }
+
+  async getAlerts(companyId: string | null, limit = 20) {
+    const where = {
+      ...(companyId ? { companyId } : {}),
+      resolved: false,
+    };
+
+    const alerts = await this.prisma.alert.findMany({
+      where,
+      include: {
+        trip: { select: { id: true, tripId: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return alerts;
+  }
+
+  async resolveAlert(alertId: string, companyId: string | null) {
+    return this.prisma.alert.update({
+      where: {
+        id: alertId,
+        ...(companyId ? { companyId } : {}),
+      },
+      data: { resolved: true },
+    });
+  }
+
+  async getMapPoints(companyId: string | null, limit = 50) {
+    const where = {
+      ...(companyId ? { companyId } : {}),
+      latitude:  { not: null },
+      longitude: { not: null },
+    };
+
+    return this.prisma.trip.findMany({
+      where,
+      select: {
+        id:           true,
+        tripId:       true,
+        latitude:     true,
+        longitude:    true,
+        registeredAt: true,
+        driver: { select: { name: true } },
+      },
+      orderBy: { registeredAt: 'desc' },
+      take: limit,
+    });
   }
 }

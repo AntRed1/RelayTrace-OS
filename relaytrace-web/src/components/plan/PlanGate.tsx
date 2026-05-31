@@ -41,11 +41,11 @@ function UpgradePrompt({ feature, currentPlan }: UpgradePromptProps) {
           {FEATURE_LABELS[feature]}
         </h3>
         <p className="text-sm text-slate-500 max-w-xs mx-auto">
-          Esta función está disponible a partir del plan{" "}
+          This feature is available from the{" "}
           <span className="font-semibold" style={{ color: required.color }}>
             {required.displayName}
-          </span>
-          . Tu plan actual es{" "}
+          </span>{" "}
+          plan. Your current plan is{" "}
           <span className="font-semibold" style={{ color: current.color }}>
             {current.displayName}
           </span>
@@ -58,12 +58,12 @@ function UpgradePrompt({ feature, currentPlan }: UpgradePromptProps) {
         style={{ background: `linear-gradient(135deg,${required.color},${required.color}cc)` }}
       >
         <ArrowUpCircle size={15} />
-        Actualiza al plan {required.displayName} — {required.price}
+        Upgrade to {required.displayName} — {required.price}
         {required.period && ` ${required.period}`}
       </div>
 
       <p className="text-xs text-slate-400">
-        Contacta a tu administrador o al soporte de RelayTrace OS para cambiar tu plan.
+        Contact your administrator or RelayTrace OS support to change your plan.
       </p>
     </div>
   );

@@ -35,6 +35,6 @@ output "subnet_private_id" {
 # ── NSG IDs ────────────────────────────────────────────────────────────────────
 
 output "nsg_appservice_id" { value = azurerm_network_security_group.appservice.id }
-output "nsg_data_id"       { value = azurerm_network_security_group.data.id }
-output "nsg_mysql_id"      { value = azurerm_network_security_group.mysql.id }
-output "nsg_private_id"    { value = azurerm_network_security_group.private.id }
+output "nsg_data_id" { value = azurerm_network_security_group.data.id }
+output "nsg_mysql_id" { value = azurerm_network_security_group.mysql.id }
+output "nsg_private_id" { value = azurerm_network_security_group.private.id }

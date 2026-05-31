@@ -44,7 +44,7 @@ resource "azurerm_mysql_flexible_server" "this" {
   administrator_login    = var.mysql_admin_username
   administrator_password = var.mysql_admin_password
 
-  sku_name = "B_Standard_B1ms"  # Burstable, 1 vCore, 2 GiB RAM
+  sku_name = "B_Standard_B1ms" # Burstable, 1 vCore, 2 GiB RAM
   version  = "8.0.21"
 
   # VNet Integration — server is placed inside snet-mysql (delegated subnet).
@@ -60,7 +60,7 @@ resource "azurerm_mysql_flexible_server" "this" {
   }
 
   backup_retention_days        = var.mysql_backup_retention_days
-  geo_redundant_backup_enabled = false  # Not available for Burstable tier
+  geo_redundant_backup_enabled = false # Not available for Burstable tier
 
   # High availability is not available for Burstable tier.
   # Upgrade to General Purpose to enable StandbyWithSameZone or ZoneRedundant.

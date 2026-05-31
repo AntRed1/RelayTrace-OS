@@ -51,8 +51,8 @@ resource "azurerm_cdn_frontdoor_custom_domain" "web" {
   host_name                = var.web_custom_domain
 
   tls {
-    certificate_type    = "ManagedCertificate"
-    minimum_tls_version = "TLS12"
+    certificate_type = "ManagedCertificate"
+    minimum_version  = "TLS12"
   }
 }
 
@@ -62,8 +62,8 @@ resource "azurerm_cdn_frontdoor_custom_domain" "api" {
   host_name                = var.api_custom_domain
 
   tls {
-    certificate_type    = "ManagedCertificate"
-    minimum_tls_version = "TLS12"
+    certificate_type = "ManagedCertificate"
+    minimum_version  = "TLS12"
   }
 }
 
