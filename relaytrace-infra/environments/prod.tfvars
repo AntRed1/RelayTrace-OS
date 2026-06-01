@@ -28,6 +28,7 @@ redis_capacity = 1 # C1 = 1 GB, SLA, replication
 # Front Door
 web_custom_domain = "www.relaytrace.com"
 api_custom_domain = "api.relaytrace.com"
+frontdoor_sku     = "Standard_AzureFrontDoor" # Upgrade to Premium_AzureFrontDoor when managed WAF rules are needed
 waf_mode          = "Prevention"
 
 # Communication (ACS Email)

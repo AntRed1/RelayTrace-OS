@@ -25,6 +25,17 @@ variable "api_custom_domain" {
   default     = "api.relaytrace.com"
 }
 
+# Front Door SKU
+variable "frontdoor_sku" {
+  description = "Front Door SKU. Standard_AzureFrontDoor (cheaper, no managed WAF rules) or Premium_AzureFrontDoor (managed rule sets, bot protection). Use Standard for dev."
+  type        = string
+  default     = "Standard_AzureFrontDoor"
+  validation {
+    condition     = contains(["Standard_AzureFrontDoor", "Premium_AzureFrontDoor"], var.frontdoor_sku)
+    error_message = "frontdoor_sku must be Standard_AzureFrontDoor or Premium_AzureFrontDoor."
+  }
+}
+
 # WAF
 variable "waf_mode" {
   description = "WAF mode: Detection (log only) for dev, Prevention (block) for prod."

@@ -57,9 +57,23 @@ resource "azurerm_storage_account" "this" {
   }
 
   tags = var.tags
+
+  # This account also stores the Terraform remote state (container: tfstate).
+  # Destroying it would lose all infrastructure state — never allow accidental destroy.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # ── Blob Containers ───────────────────────────────────────────────────────────
+
+# Terraform remote state — shared by all environments (dev, prod).
+# Key per environment: relaytrace/dev.tfstate, relaytrace/prod.tfstate
+resource "azurerm_storage_container" "tfstate" {
+  name                  = "tfstate"
+  storage_account_name  = azurerm_storage_account.this.name
+  container_access_type = "private"
+}
 
 resource "azurerm_storage_container" "screenshots" {
   name                  = "screenshots"

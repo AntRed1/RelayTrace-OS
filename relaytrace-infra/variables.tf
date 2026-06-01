@@ -199,6 +199,12 @@ variable "api_custom_domain" {
   default     = "api.relaytrace.com"
 }
 
+variable "frontdoor_sku" {
+  description = "Front Door SKU. Standard_AzureFrontDoor for dev/cost-optimised. Premium_AzureFrontDoor for prod managed WAF rules."
+  type        = string
+  default     = "Standard_AzureFrontDoor"
+}
+
 variable "waf_mode" {
   description = "WAF mode: Detection (dev) or Prevention (prod)."
   type        = string

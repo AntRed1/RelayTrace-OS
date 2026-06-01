@@ -28,7 +28,8 @@ resource "azurerm_linux_web_app" "api" {
     minimum_tls_version    = "1.2"
     ftps_state             = "Disabled"
     vnet_route_all_enabled = true # Route ALL egress through VNet
-    health_check_path      = var.api_health_check_path
+    health_check_path                 = var.api_health_check_path
+    health_check_eviction_time_in_min = 10
 
     # Apply pending Prisma migrations before booting the API.
     # `migrate deploy` is idempotent (only applies un-applied migrations) and

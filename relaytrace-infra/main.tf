@@ -175,6 +175,7 @@ module "frontdoor" {
   web_custom_domain = var.web_custom_domain
   api_custom_domain = var.api_custom_domain
   waf_mode          = var.waf_mode
+  frontdoor_sku     = var.frontdoor_sku
 
   tags = local.common_tags
 }

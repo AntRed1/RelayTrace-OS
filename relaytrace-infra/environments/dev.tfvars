@@ -28,7 +28,8 @@ redis_capacity = 0 # C0 = 250 MB
 # Front Door
 web_custom_domain = "www.relaytrace.com"
 api_custom_domain = "api.relaytrace.com"
-waf_mode          = "Detection" # Log-only in dev — flip to Prevention in prod
+frontdoor_sku     = "Standard_AzureFrontDoor" # Premium needed for managed WAF rules
+waf_mode          = "Detection"               # Log-only in dev — flip to Prevention in prod
 
 # Communication (ACS Email)
 email_domain            = "mail.relaytrace.com"

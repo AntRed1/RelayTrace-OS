@@ -32,7 +32,7 @@
 resource "azurerm_cdn_frontdoor_profile" "this" {
   name                     = "fd-${var.prefix}"
   resource_group_name      = var.resource_group_name
-  sku_name                 = "Standard_AzureFrontDoor"
+  sku_name                 = var.frontdoor_sku
   response_timeout_seconds = 120 # Allow up to 2 min for slow API responses
   tags                     = var.tags
 }
@@ -52,20 +52,23 @@ resource "azurerm_cdn_frontdoor_endpoint" "this" {
 resource "azurerm_cdn_frontdoor_firewall_policy" "this" {
   name                = "waf${replace(var.prefix, "-", "")}"
   resource_group_name = var.resource_group_name
-  sku_name            = "Standard_AzureFrontDoor"
+  sku_name            = var.frontdoor_sku
   enabled             = true
   mode                = var.waf_mode # "Detection" dev / "Prevention" prod
 
-  managed_rule {
-    type    = "DefaultRuleSet"
-    version = "1.0"
-    action  = "Block"
-  }
-
-  managed_rule {
-    type    = "Microsoft_BotManagerRuleSet"
-    version = "1.0"
-    action  = "Block"
+  # managed_rule blocks require Premium_AzureFrontDoor SKU.
+  # Standard SKU supports custom rules only. Upgrade to Premium for
+  # OWASP/DefaultRuleSet and BotManager protection in prod.
+  dynamic "managed_rule" {
+    for_each = var.frontdoor_sku == "Premium_AzureFrontDoor" ? [
+      { type = "DefaultRuleSet", version = "2.1", action = "Block" },
+      { type = "Microsoft_BotManagerRuleSet", version = "1.1", action = "Block" },
+    ] : []
+    content {
+      type    = managed_rule.value.type
+      version = managed_rule.value.version
+      action  = managed_rule.value.action
+    }
   }
 
   tags = var.tags
