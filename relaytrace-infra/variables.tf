@@ -187,16 +187,22 @@ variable "web_port" {
 
 # ── Front Door ─────────────────────────────────────────────────────────────────
 
-variable "web_custom_domain" {
-  description = "Custom domain for the Web app."
+variable "web_root_domain" {
+  description = "Root domain for the Web app (both relaytrace.net and www.relaytrace.net route here)."
   type        = string
-  default     = "www.relaytrace.com"
+  default     = "relaytrace.net"
+}
+
+variable "web_custom_domain" {
+  description = "WWW domain for the Web app (alias for root domain)."
+  type        = string
+  default     = "www.relaytrace.net"
 }
 
 variable "api_custom_domain" {
   description = "Custom domain for the API."
   type        = string
-  default     = "api.relaytrace.com"
+  default     = "api.relaytrace.net"
 }
 
 variable "frontdoor_sku" {
@@ -214,15 +220,15 @@ variable "waf_mode" {
 # ── Communication (ACS Email) ─────────────────────────────────────────────────
 
 variable "email_domain" {
-  description = "Domain used for sending emails (e.g. mail.relaytrace.com). DNS records must be added after apply."
+  description = "Domain used for sending emails (e.g. mail.relaytrace.net). DNS records must be added after apply."
   type        = string
-  default     = "mail.relaytrace.com"
+  default     = "mail.relaytrace.net"
 }
 
 variable "acs_from_address" {
-  description = "Full sender address (e.g. noreply@mail.relaytrace.com)."
+  description = "Full sender address (e.g. noreply@mail.relaytrace.net)."
   type        = string
-  default     = "noreply@mail.relaytrace.com"
+  default     = "noreply@mail.relaytrace.net"
 }
 
 variable "acs_data_location" {

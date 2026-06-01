@@ -95,8 +95,8 @@ async function bootstrap(): Promise<void> {
         .setVersion('1.0')
         .setContact(
           'RelayTrace',
-          'https://relaytrace.com',
-          'support@relaytrace.com',
+          'https://relaytrace.net',
+          'support@relaytrace.net',
         )
         .setLicense('UNLICENSED', '')
         .addBearerAuth(

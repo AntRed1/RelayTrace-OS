@@ -46,7 +46,8 @@ resource "azurerm_linux_web_app" "web" {
     "DOCKER_ENABLE_CI" = "true"
 
     # ── Observability ─────────────────────────────────────────────────────────
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = "@Microsoft.KeyVault(VaultName=${var.key_vault_name};SecretName=appinsights-connection-string)"
+    # Docker does not resolve @Microsoft.KeyVault() references, fetch actual value.
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = data.azurerm_key_vault_secret.appinsights_connection_string.value
   }
 
   tags = var.tags

@@ -74,7 +74,7 @@ export class EmailService {
   private async send(options: nodemailer.SendMailOptions): Promise<void> {
     const from =
       this.config.get<string>('SMTP_FROM') ??
-      '"RelayTrace" <noreply@relaytrace.com>';
+      '"RelayTrace" <noreply@relaytrace.net>';
 
     if (!this.transporter) {
       this.logger.log(
@@ -102,7 +102,7 @@ export class EmailService {
     const loginUrl =
       payload.loginUrl ??
       this.config.get<string>('APP_URL') ??
-      'https://app.relaytrace.com';
+      'https://app.relaytrace.net';
 
     const planLabel =
       payload.plan.charAt(0).toUpperCase() + payload.plan.slice(1);

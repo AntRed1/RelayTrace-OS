@@ -57,12 +57,6 @@ resource "azurerm_storage_account" "this" {
   }
 
   tags = var.tags
-
-  # This account also stores the Terraform remote state (container: tfstate).
-  # Destroying it would lose all infrastructure state — never allow accidental destroy.
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # ── Blob Containers ───────────────────────────────────────────────────────────

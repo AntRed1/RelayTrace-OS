@@ -13,16 +13,22 @@ variable "web_app_hostname" {
 }
 
 # Custom domains
-variable "web_custom_domain" {
-  description = "Custom domain for the Web app (e.g. www.relaytrace.com)."
+variable "web_root_domain" {
+  description = "Root domain for the Web app (e.g. relaytrace.net)."
   type        = string
-  default     = "www.relaytrace.com"
+  default     = "relaytrace.net"
+}
+
+variable "web_custom_domain" {
+  description = "Custom domain for the Web app (e.g. www.relaytrace.net)."
+  type        = string
+  default     = "www.relaytrace.net"
 }
 
 variable "api_custom_domain" {
-  description = "Custom domain for the API (e.g. api.relaytrace.com)."
+  description = "Custom domain for the API (e.g. api.relaytrace.net)."
   type        = string
-  default     = "api.relaytrace.com"
+  default     = "api.relaytrace.net"
 }
 
 # Front Door SKU

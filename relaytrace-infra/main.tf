@@ -169,9 +169,10 @@ module "frontdoor" {
   prefix              = local.prefix
   resource_group_name = azurerm_resource_group.main.name
 
-  api_app_hostname = module.app_service.api_default_hostname
-  web_app_hostname = module.app_service.web_default_hostname
+  api_app_hostname  = module.app_service.api_default_hostname
+  web_app_hostname  = module.app_service.web_default_hostname
 
+  web_root_domain   = var.web_root_domain
   web_custom_domain = var.web_custom_domain
   api_custom_domain = var.api_custom_domain
   waf_mode          = var.waf_mode

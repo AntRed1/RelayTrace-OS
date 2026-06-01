@@ -81,10 +81,10 @@ export default function OnboardingCancelPage() {
           <p className="text-xs text-slate-400">
             Need help?{" "}
             <a
-              href="mailto:support@relaytrace.com"
+              href="mailto:support@relaytrace.net"
               className="text-blue-500 hover:text-blue-600"
             >
-              support@relaytrace.com
+              support@relaytrace.net
             </a>
           </p>
         </div>

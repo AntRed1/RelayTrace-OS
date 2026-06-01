@@ -8,6 +8,60 @@ locals {
   kv = "VaultName=${var.key_vault_name};SecretName"
 }
 
+# Data sources to read secrets from Key Vault for Docker environment variables.
+# Docker in App Service does not resolve @Microsoft.KeyVault() references,
+# so we pass actual secret values instead. Managed Identity grants read access.
+
+data "azurerm_key_vault_secret" "mysql_connection_string" {
+  name         = "mysql-connection-string"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "jwt_access_secret" {
+  name         = "jwt-access-secret"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "jwt_refresh_secret" {
+  name         = "jwt-refresh-secret"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "stripe_secret_key" {
+  name         = "stripe-secret-key"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "stripe_webhook_secret" {
+  name         = "stripe-webhook-secret"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "storage_account_name" {
+  name         = "storage-account-name"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "redis_host" {
+  name         = "redis-host"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "redis_password" {
+  name         = "redis-password"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "acs_connection_string" {
+  name         = "acs-connection-string"
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "appinsights_connection_string" {
+  name         = "appinsights-connection-string"
+  key_vault_id = var.key_vault_id
+}
+
 resource "azurerm_linux_web_app" "api" {
   name                = "app-api-${var.prefix}"
   resource_group_name = var.resource_group_name
@@ -55,24 +109,26 @@ resource "azurerm_linux_web_app" "api" {
     "PORT"          = tostring(var.api_port)
     "WEBSITES_PORT" = tostring(var.api_port)
 
-    # ── Key Vault references (resolved at startup via Managed Identity) ───────
-    "DATABASE_URL"               = "@Microsoft.KeyVault(${local.kv}=mysql-connection-string)"
-    "JWT_SECRET"                 = "@Microsoft.KeyVault(${local.kv}=jwt-access-secret)"
-    "JWT_REFRESH_SECRET"         = "@Microsoft.KeyVault(${local.kv}=jwt-refresh-secret)"
-    "STRIPE_SECRET_KEY"          = "@Microsoft.KeyVault(${local.kv}=stripe-secret-key)"
-    "STRIPE_WEBHOOK_SECRET"      = "@Microsoft.KeyVault(${local.kv}=stripe-webhook-secret)"
-    "AZURE_STORAGE_ACCOUNT_NAME" = "@Microsoft.KeyVault(${local.kv}=storage-account-name)"
+    # ── Secrets (read from Key Vault via data sources for Docker) ───────────────
+    # Docker does not resolve @Microsoft.KeyVault() references, so we fetch
+    # actual secret values and pass them as environment variables.
+    "DATABASE_URL"               = data.azurerm_key_vault_secret.mysql_connection_string.value
+    "JWT_SECRET"                 = data.azurerm_key_vault_secret.jwt_access_secret.value
+    "JWT_REFRESH_SECRET"         = data.azurerm_key_vault_secret.jwt_refresh_secret.value
+    "STRIPE_SECRET_KEY"          = data.azurerm_key_vault_secret.stripe_secret_key.value
+    "STRIPE_WEBHOOK_SECRET"      = data.azurerm_key_vault_secret.stripe_webhook_secret.value
+    "AZURE_STORAGE_ACCOUNT_NAME" = data.azurerm_key_vault_secret.storage_account_name.value
 
     # ── Redis ─────────────────────────────────────────────────────────────────
     # API reads discrete host/port/password (ioredis + BullMQ), not a URL.
     # Azure Cache for Redis is TLS-only on 6380 → REDIS_TLS enables ioredis tls.
-    "REDIS_HOST"     = "@Microsoft.KeyVault(${local.kv}=redis-host)"
+    "REDIS_HOST"     = data.azurerm_key_vault_secret.redis_host.value
     "REDIS_PORT"     = "6380"
-    "REDIS_PASSWORD" = "@Microsoft.KeyVault(${local.kv}=redis-password)"
+    "REDIS_PASSWORD" = data.azurerm_key_vault_secret.redis_password.value
     "REDIS_TLS"      = "true"
 
     # ── Communication (ACS Email) ─────────────────────────────────────────────
-    "ACS_CONNECTION_STRING" = "@Microsoft.KeyVault(${local.kv}=acs-connection-string)"
+    "ACS_CONNECTION_STRING" = data.azurerm_key_vault_secret.acs_connection_string.value
     "ACS_FROM_ADDRESS"      = var.acs_from_address
 
     # ── Storage containers (not sensitive — plain values) ─────────────────────
@@ -85,18 +141,17 @@ resource "azurerm_linux_web_app" "api" {
     "STRIPE_PRICE_GROWTH"  = var.stripe_price_growth
 
     # ── Application URL (used in outbound email links) ────────────────────────
-    "APP_URL" = var.api_public_url != "" ? "https://${var.web_custom_domain}" : "https://app-web-${var.prefix}.azurewebsites.net"
+    "APP_URL" = var.web_custom_domain != "" ? "https://${var.web_custom_domain}" : "https://app-web-${var.prefix}.azurewebsites.net"
 
     # ── CORS (allows the web app through the NestJS CORS middleware) ──────────
-    "ALLOWED_ORIGINS" = var.api_public_url != "" ? "https://${var.web_custom_domain},https://app-web-${var.prefix}.azurewebsites.net" : "https://app-web-${var.prefix}.azurewebsites.net"
+    "ALLOWED_ORIGINS" = var.web_custom_domain != "" ? "https://${var.web_custom_domain},https://app-web-${var.prefix}.azurewebsites.net" : "https://app-web-${var.prefix}.azurewebsites.net"
 
     # ── Docker ────────────────────────────────────────────────────────────────
     # Enables webhook-based continuous deployment from Docker Hub.
     "DOCKER_ENABLE_CI" = "true"
 
     # ── Observability ─────────────────────────────────────────────────────────
-    # Secret written by module 08. SDK reads this env var automatically.
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = "@Microsoft.KeyVault(${local.kv}=appinsights-connection-string)"
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = data.azurerm_key_vault_secret.appinsights_connection_string.value
   }
 
   tags = var.tags

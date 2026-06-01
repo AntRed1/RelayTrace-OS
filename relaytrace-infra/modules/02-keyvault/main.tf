@@ -11,10 +11,8 @@
 #   - RBAC authorization enabled (no legacy access policies)
 #   - Terraform service principal → Key Vault Secrets Officer (write during apply)
 #   - App Service Managed Identity → Key Vault Secrets User (added in module 05)
-#   - Private Endpoint in snet-private; Private DNS zone auto-registers the A record
-#   - network_acls default_action = "Allow" during bootstrap so the Terraform runner
-#     can reach the plane during the same apply that creates the PE.
-#     Lock to "Deny" + add ci_runner_ips after the first successful apply.
+#   - Public access enabled (dev); network_acls default_action = "Allow"
+#   - For prod, restrict to managed identity + ci_runner_ips via network_acls
 # ══════════════════════════════════════════════════════════════════════════════
 
 data "azurerm_client_config" "current" {}
@@ -51,41 +49,6 @@ resource "azurerm_role_assignment" "terraform_secrets_officer" {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Private Endpoint + Private DNS Zone
+# Key Vault is now publicly accessible (dev environment optimization)
+# Private Endpoint + Private DNS Zone removed to reduce costs
 # ══════════════════════════════════════════════════════════════════════════════
-
-resource "azurerm_private_dns_zone" "keyvault" {
-  name                = "privatelink.vaultcore.azure.net"
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "keyvault" {
-  name                  = "pdnslink-kv-${var.prefix}"
-  resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.keyvault.name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-  tags                  = var.tags
-}
-
-resource "azurerm_private_endpoint" "keyvault" {
-  name                = "pe-kv-${var.prefix}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = var.subnet_private_id
-  tags                = var.tags
-
-  private_service_connection {
-    name                           = "psc-kv-${var.prefix}"
-    private_connection_resource_id = azurerm_key_vault.this.id
-    subresource_names              = ["vault"]
-    is_manual_connection           = false
-  }
-
-  # Automatically registers the A record in the private DNS zone.
-  private_dns_zone_group {
-    name                 = "pdnsgroup-kv-${var.prefix}"
-    private_dns_zone_ids = [azurerm_private_dns_zone.keyvault.id]
-  }
-}

@@ -51,11 +51,11 @@ export class PreRegistrationCheckoutDto {
   @IsEnum(['starter', 'growth', 'fleet'])
   plan: 'starter' | 'growth' | 'fleet';
 
-  @ApiProperty({ example: 'https://app.relaytrace.com/onboarding/success' })
+  @ApiProperty({ example: 'https://app.relaytrace.net/onboarding/success' })
   @IsUrl({ require_tld: false })   // require_tld:false allows localhost in dev
   successUrl: string;
 
-  @ApiProperty({ example: 'https://app.relaytrace.com/onboarding/cancel' })
+  @ApiProperty({ example: 'https://app.relaytrace.net/onboarding/cancel' })
   @IsUrl({ require_tld: false })
   cancelUrl: string;
 }

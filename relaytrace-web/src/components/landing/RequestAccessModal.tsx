@@ -505,7 +505,7 @@ export function RequestAccessModal({ open, onClose, plans, initialPlan }: Props)
 
               <a
                 href={
-                  `mailto:sales@relaytrace.com` +
+                  `mailto:sales@relaytrace.net` +
                   `?subject=${encodeURIComponent(`${selectedPlan?.displayName ?? "Custom"} Plan Inquiry — ${step1Data?.companyName ?? ""}` )}` +
                   `&body=${encodeURIComponent(
                     `Hi,\n\nI'm interested in the ${selectedPlan?.displayName ?? "custom"} plan for ${step1Data?.companyName ?? "my company"}.\n\nContact: ${step1Data?.contactName ?? ""}\nEmail: ${step1Data?.email ?? ""}\nDrivers: ${step1Data?.driverCount ?? "?"}\n\nPlease reach out to discuss pricing.`,

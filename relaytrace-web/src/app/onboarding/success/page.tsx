@@ -72,10 +72,10 @@ function OnboardingSuccessContent() {
               <h2 className="text-lg font-bold text-slate-900">Something went wrong</h2>
               <p className="text-sm text-slate-500">{error}</p>
               <a
-                href="mailto:support@relaytrace.com"
+                href="mailto:support@relaytrace.net"
                 className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                <Mail size={14} /> support@relaytrace.com
+                <Mail size={14} /> support@relaytrace.net
               </a>
             </div>
 

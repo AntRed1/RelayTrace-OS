@@ -2,10 +2,11 @@
 # Rule Set, Custom Domains, Routes, and Domain Associations
 #
 # Rule set:   HTTPS redirect (HTTP 301 → HTTPS on all routes)
-# Domains:    www.relaytrace.com  → Web route
-#             api.relaytrace.com  → API route
-# Routes:     web-route  matches /*  on www.relaytrace.com
-#             api-route  matches /*  on api.relaytrace.com
+# Domains:    relaytrace.net      → Web route
+#             www.relaytrace.net  → Web route
+#             api.relaytrace.net  → API route
+# Routes:     web-route matches /* on both relaytrace.net and www.relaytrace.net
+#             api-route matches /* on api.relaytrace.net
 #             API route has caching disabled (dynamic responses)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -45,6 +46,17 @@ resource "azurerm_cdn_frontdoor_rule" "https_redirect" {
 # Azure provisions managed TLS certificates automatically after DNS validation.
 # Add the CNAME + TXT records output by 'terraform output frontdoor_dns_records'.
 
+resource "azurerm_cdn_frontdoor_custom_domain" "web_root" {
+  name                     = "domain-web-root-${replace(var.web_root_domain, ".", "-")}"
+  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.this.id
+  host_name                = var.web_root_domain
+
+  tls {
+    certificate_type = "ManagedCertificate"
+    minimum_version  = "TLS12"
+  }
+}
+
 resource "azurerm_cdn_frontdoor_custom_domain" "web" {
   name                     = "domain-web-${replace(var.web_custom_domain, ".", "-")}"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.this.id
@@ -76,7 +88,10 @@ resource "azurerm_cdn_frontdoor_route" "web" {
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.web.id]
   cdn_frontdoor_rule_set_ids    = [azurerm_cdn_frontdoor_rule_set.this.id]
 
-  cdn_frontdoor_custom_domain_ids = [azurerm_cdn_frontdoor_custom_domain.web.id]
+  cdn_frontdoor_custom_domain_ids = [
+    azurerm_cdn_frontdoor_custom_domain.web_root.id,
+    azurerm_cdn_frontdoor_custom_domain.web.id
+  ]
 
   supported_protocols    = ["Http", "Https"]
   patterns_to_match      = ["/*"]
@@ -108,6 +123,11 @@ resource "azurerm_cdn_frontdoor_route" "api" {
 
 # ── Custom Domain ↔ Route associations ───────────────────────────────────────
 # Required to complete the domain → route binding.
+
+resource "azurerm_cdn_frontdoor_custom_domain_association" "web_root" {
+  cdn_frontdoor_custom_domain_id = azurerm_cdn_frontdoor_custom_domain.web_root.id
+  cdn_frontdoor_route_ids        = [azurerm_cdn_frontdoor_route.web.id]
+}
 
 resource "azurerm_cdn_frontdoor_custom_domain_association" "web" {
   cdn_frontdoor_custom_domain_id = azurerm_cdn_frontdoor_custom_domain.web.id

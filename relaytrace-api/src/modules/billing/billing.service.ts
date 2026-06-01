@@ -143,7 +143,7 @@ export class BillingService {
 
     if (planDef.priceMonthly === 0) {
       throw new BadRequestException(
-        `Plan "${planDef.displayName}" requires custom pricing. Please contact sales@relaytrace.com`,
+        `Plan "${planDef.displayName}" requires custom pricing. Please contact sales@relaytrace.net`,
       );
     }
 

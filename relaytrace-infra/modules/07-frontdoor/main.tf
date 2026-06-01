@@ -4,10 +4,11 @@
 # Provisions Azure Front Door Standard as the global edge layer:
 #
 #   Front Door Profile (Standard_AzureFrontDoor)
-#   WAF Policy — DefaultRuleSet 1.0, Bot Protection 1.0
+#   WAF Policy — DefaultRuleSet 1.0 (Premium only), Bot Protection 1.0 (Premium only)
 #   Endpoint    — fd-{prefix}.azurefd.net
 #   Origins     — API App Service + Web App Service
-#   Routes      — api.relaytrace.com → API, www.relaytrace.com → Web
+#   Routes      — web-route (matches /*) for both relaytrace.net and www.relaytrace.net
+#              — api-route (matches /*) for api.relaytrace.net
 #   Custom domains with Azure-managed TLS certificates
 #   Rule: HTTP → HTTPS permanent redirect
 #   Security policy — WAF applied to all custom domains + endpoint
@@ -89,6 +90,9 @@ resource "azurerm_cdn_frontdoor_security_policy" "this" {
       association {
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_endpoint.this.id
+        }
+        domain {
+          cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_custom_domain.web_root.id
         }
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_custom_domain.web.id
