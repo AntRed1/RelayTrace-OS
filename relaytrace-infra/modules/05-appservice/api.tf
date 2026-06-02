@@ -63,11 +63,11 @@ resource "azurerm_linux_web_app" "api" {
   }
 
   site_config {
-    always_on              = var.always_on
-    http2_enabled          = true
-    minimum_tls_version    = "1.2"
-    ftps_state             = "Disabled"
-    vnet_route_all_enabled = true # Route ALL egress through VNet
+    always_on                         = var.always_on
+    http2_enabled                     = true
+    minimum_tls_version               = "1.2"
+    ftps_state                        = "Disabled"
+    vnet_route_all_enabled            = true # Route ALL egress through VNet
     health_check_path                 = var.api_health_check_path
     health_check_eviction_time_in_min = 10
 
@@ -75,8 +75,7 @@ resource "azurerm_linux_web_app" "api" {
     # `migrate deploy` is idempotent (only applies un-applied migrations) and
     # acquires a DB advisory lock, so concurrent instances are safe. Requires
     # the Prisma CLI + prisma.config.ts to be present in the image (see Dockerfile).
-    app_command_line = "sh -c 'npx prisma migrate deploy && node dist/src/main.js'"
-
+    # app_command_line = "sh -c 'npx prisma migrate deploy && node dist/src/main.js'" # Migrations are now run as a separate startup command in module 07 to ensure they run before the app starts.
     application_stack {
       docker_image_name   = "${var.dockerhub_username}/${var.api_image_name}:${var.api_image_tag}"
       docker_registry_url = "https://index.docker.io"

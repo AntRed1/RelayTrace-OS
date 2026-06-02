@@ -72,9 +72,9 @@ model Trip {
   driverId String
   driver   User   @relation(fields: [driverId], references: [id])
 
-  tripId        String  // ID de Amazon Relay
-  status        String  @default("pending")  // pending | confirmed | flagged
-  sourceType    String  @default("manual")   // manual | ocr | relay_email
+  tripId     String // ID de Amazon Relay
+  status     String @default("pending") // pending | confirmed | flagged
+  sourceType String @default("manual") // manual | ocr | relay_email
 
   /// Azure Blob path of the screenshot (e.g. "screenshots/companyId/uuid.jpg").
   /// TripsService converts this to a SAS URL when returning trip data.
@@ -86,7 +86,7 @@ model Trip {
   /// processing → job picked up by the processor
   /// completed  → OCR finished (check OCRResult for extracted data)
   /// failed     → OCR failed after retries (check OCRResult.errorMessage)
-  ocrStatus     String  @default("none")
+  ocrStatus String @default("none")
 
   /// GPS coordinates captured from the driver's device at registration time.
   latitude  Float?
@@ -143,7 +143,7 @@ model OCRResult {
   // ── Results (populated when status = completed) ──────────────────────────
   extractedTripId String? // the Trip ID extracted from the screenshot
   confidenceScore Float   @default(0) // 0.0 – 1.0
-  rawText         String? @db.Text    // full raw text from Document Intelligence
+  rawText         String? @db.Text // full raw text from Document Intelligence
 
   // ── Error info (populated when status = failed) ───────────────────────────
   errorMessage String? @db.Text
@@ -185,8 +185,8 @@ model AuditLog {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  action    String   // login | create_trip | create_plan | …
-  metadata  String   @db.Text // JSON payload
+  action    String // login | create_trip | create_plan | …
+  metadata  String  @db.Text // JSON payload
   ipAddress String?
   userAgent String?
 
@@ -200,7 +200,7 @@ model AuditLog {
 
 /// Solicitudes de acceso enviadas desde la landing page (pre-onboarding)
 model CompanyRequest {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   companyName String
   contactName String
   email       String
@@ -221,19 +221,19 @@ model CompanyRequest {
 /// featureFlags:  JSON string[]   — internal PlanFeature keys consumed by PlanGuard.
 model Plan {
   id              String   @id @default(cuid())
-  slug            String   @unique            // "starter" | "growth" | "fleet" | custom
+  slug            String   @unique // "starter" | "growth" | "fleet" | custom
   displayName     String
   description     String   @db.Text
   priceMonthly    Decimal  @db.Decimal(10, 2)
   currency        String   @default("USD")
-  maxDrivers      Int?                        // null = unlimited
-  featureLabels   String   @db.Text           // JSON: string[]  — pricing card bullets
-  featureFlags    String   @db.Text           // JSON: PlanFeature[]  — access control
+  maxDrivers      Int? // null = unlimited
+  featureLabels   String   @db.Text // JSON: string[]  — pricing card bullets
+  featureFlags    String   @db.Text // JSON: PlanFeature[]  — access control
   isActive        Boolean  @default(true)
   isPopular       Boolean  @default(false)
   sortOrder       Int      @default(0)
   ctaLabel        String   @default("Get Started")
-  stripePriceId   String?                     // synced after price change
+  stripePriceId   String? // synced after price change
   stripeProductId String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -11,7 +11,7 @@
 resource "random_password" "mysql_admin" {
   length           = 20
   special          = true
-  override_special = "!#%&*()-_=+[]{}:?" # chars safe in MySQL connection strings
+  override_special = "!#%-_" # solo chars seguros en URLs sin encoding
   min_upper        = 2
   min_lower        = 2
   min_numeric      = 2

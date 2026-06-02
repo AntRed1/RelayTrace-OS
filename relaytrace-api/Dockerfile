@@ -33,16 +33,23 @@ RUN npm ci --only=production && npm cache clean --force
 
 # Copiar artefactos del builder
 COPY --from=builder /app/dist ./dist
+# Remove the compiled prisma.config.js — it's CommonJS output of an ESM file and
+# causes Prisma to fail with a syntax parse error at startup. The .mjs version below
+# is the correct one used by the entrypoint.
+RUN rm -f dist/prisma.config.js
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/public ./public
 
-# prisma.config.ts holds the datasource URL (env DATABASE_URL); the schema's
-# datasource block has no url, so `prisma migrate deploy` needs this file at runtime.
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# Config de Prisma en ESM nativo (no compilado desde TS)
+COPY prisma.config.mjs ./prisma.config.mjs
+
+# Entrypoint script
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 # Cambiar ownership al usuario no-root
-RUN chown -R nestjs:nodejs /app
+RUN chmod +x docker-entrypoint.sh && \
+	chown -R nestjs:nodejs /app
 
 USER nestjs
 
@@ -50,7 +57,7 @@ EXPOSE 3000
 
 ENV NODE_ENV=production
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 	CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
 
-CMD ["node", "dist/src/main.js"]
+CMD ["./docker-entrypoint.sh"]

@@ -41,7 +41,7 @@ resource "azurerm_redis_cache" "this" {
   public_network_access_enabled = false # PE-only access
 
   redis_configuration {
-    maxmemory_policy = "allkeys-lru" # evict LRU keys when memory full
+    maxmemory_policy = "noeviction" # required by BullMQ — never evict queue keys
   }
 
   tags = var.tags

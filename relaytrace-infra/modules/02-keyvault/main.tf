@@ -26,9 +26,9 @@ resource "azurerm_key_vault" "this" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
-  enable_rbac_authorization  = true
-  soft_delete_retention_days = 90
-  purge_protection_enabled   = var.purge_protection_enabled
+  soft_delete_retention_days    = 90
+  purge_protection_enabled      = var.purge_protection_enabled
+  public_network_access_enabled = true
 
   # Allow during bootstrap; tighten to "Deny" + ip_rules after first apply.
   network_acls {
