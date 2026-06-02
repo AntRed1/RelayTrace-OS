@@ -7,6 +7,13 @@ import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
 function parseMysqlUrl(url: string) {
   const parsed = new URL(url);
+  // Azure MySQL Flexible Server requires SSL. The DATABASE_URL carries
+  // ?sslaccept=strict but the mariadb driver doesn't read URL params —
+  // we must forward SSL explicitly or the connection times out after ~30 s.
+  const requireSsl =
+    parsed.searchParams.get('sslaccept') === 'strict' ||
+    parsed.searchParams.get('ssl') === 'true' ||
+    parsed.hostname.includes('.mysql.database.azure.com');
   return {
     host: parsed.hostname,
     port: parseInt(parsed.port || '3306'),
@@ -15,6 +22,7 @@ function parseMysqlUrl(url: string) {
     database: parsed.pathname.replace('/', ''),
     connectionLimit: 10,
     allowPublicKeyRetrieval: true,
+    ...(requireSsl ? { ssl: { rejectUnauthorized: false } } : {}),
   };
 }
 
