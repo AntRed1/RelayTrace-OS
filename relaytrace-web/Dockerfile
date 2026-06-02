@@ -6,20 +6,18 @@ RUN npm ci
 
 COPY . .
 
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ── Production image ──────────────────────────────────────────────────────────
-# output:standalone produces .next/standalone — a self-contained Node server
-# that requires no node_modules at runtime. Image drops from ~1.2 GB to ~150 MB.
-
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
-# Static assets served by the standalone server
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
