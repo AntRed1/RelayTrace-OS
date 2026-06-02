@@ -19,7 +19,9 @@ resource "azurerm_key_vault_secret" "mysql_connection_string" {
   content_type = "text/plain"
   tags         = var.tags
 
-  value = "mysql://${var.mysql_admin_username}:${var.mysql_admin_password}@${azurerm_mysql_flexible_server.this.fqdn}:3306/${azurerm_mysql_flexible_database.app.name}?sslaccept=strict"
+  # urlencode() is critical: the random password may contain chars like ?, #, &, :
+  # that would break MySQL URL parsing if not percent-encoded.
+  value = "mysql://${var.mysql_admin_username}:${urlencode(var.mysql_admin_password)}@${azurerm_mysql_flexible_server.this.fqdn}:3306/${azurerm_mysql_flexible_database.app.name}?sslaccept=strict"
 }
 
 resource "azurerm_key_vault_secret" "redis_host" {
