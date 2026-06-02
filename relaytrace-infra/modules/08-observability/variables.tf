@@ -8,6 +8,24 @@ variable "key_vault_id" {
   type        = string
 }
 
+# Log Analytics + AppInsights — created in main.tf before app_service
+# to break the circular dependency between observability and app_service.
+variable "log_analytics_workspace_id" {
+  description = "Resource ID of the Log Analytics Workspace (created in main.tf)."
+  type        = string
+}
+
+variable "application_insights_id" {
+  description = "Resource ID of the Application Insights instance (created in main.tf)."
+  type        = string
+}
+
+variable "appinsights_connection_string" {
+  description = "Connection string of the Application Insights instance."
+  type        = string
+  sensitive   = true
+}
+
 # Resource IDs for diagnostic settings — modules 03, 04, 05
 variable "api_app_id" { type = string }
 variable "web_app_id" { type = string }
@@ -29,7 +47,7 @@ variable "retention_days" {
 variable "daily_quota_gb" {
   description = "Daily log ingestion cap in GB. Prevents unexpected cost spikes. Use -1 for unlimited."
   type        = number
-  default     = 1 # 1 GB/day — raise for prod
+  default     = 1
 }
 
 variable "tags" {

@@ -11,7 +11,6 @@ locals {
 }
 
 # ── Resource Group ─────────────────────────────────────────────────────────────
-# Single RG for all app resources. The tfstate RG is created manually (bootstrap).
 
 resource "azurerm_resource_group" "main" {
   name     = "rg-${local.prefix}"
@@ -102,6 +101,50 @@ module "storage" {
   tags = local.common_tags
 }
 
+# ── Module 06 — Communication (ACS Email) ─────────────────────────────────────
+# Created before App Service so its connection string can be passed as a variable.
+
+module "communication" {
+  source = "./modules/06-communication"
+
+  prefix              = local.prefix
+  resource_group_name = azurerm_resource_group.main.name
+
+  key_vault_id = module.keyvault.key_vault_id
+
+  data_location     = var.acs_data_location
+  email_domain      = var.email_domain
+  tracking_disabled = var.email_tracking_disabled
+
+  tags = local.common_tags
+}
+
+# ── Pre-App Observability — Log Analytics + Application Insights ───────────────
+# Created before App Service to break the circular dependency:
+#   module.observability needs app IDs → module.app_service needs appinsights string
+# Solution: create AppInsights here, pass its connection_string as a plain variable
+# to module.app_service. module.observability handles only diagnostic settings.
+
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "law-${local.prefix}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = var.log_retention_days
+  daily_quota_gb      = var.log_daily_quota_gb
+  tags                = local.common_tags
+}
+
+resource "azurerm_application_insights" "main" {
+  name                = "appi-${local.prefix}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  workspace_id        = azurerm_log_analytics_workspace.main.id
+  application_type    = "web"
+  retention_in_days   = var.log_retention_days
+  tags                = local.common_tags
+}
+
 # ── Module 05 — App Service ────────────────────────────────────────────────────
 
 module "app_service" {
@@ -120,9 +163,15 @@ module "app_service" {
 
   # Storage
   storage_account_id      = module.storage.storage_account_id
+  storage_account_name    = module.storage.storage_account_name
   container_screenshots   = module.storage.container_screenshots
   container_ocr_documents = module.storage.container_ocr_documents
   container_exports       = module.storage.container_exports
+
+  # Secrets passed directly (not via Key Vault data sources) to avoid
+  # "secret does not exist" errors on first apply.
+  acs_connection_string        = module.communication.acs_connection_string
+  appinsights_connection_string = azurerm_application_insights.main.connection_string
 
   # Plan & images
   app_service_sku    = var.app_service_sku
@@ -140,23 +189,6 @@ module "app_service" {
   web_custom_domain    = var.web_custom_domain
   stripe_price_starter = var.stripe_price_starter
   stripe_price_growth  = var.stripe_price_growth
-
-  tags = local.common_tags
-}
-
-# ── Module 06 — Communication (ACS Email) ─────────────────────────────────────
-
-module "communication" {
-  source = "./modules/06-communication"
-
-  prefix              = local.prefix
-  resource_group_name = azurerm_resource_group.main.name
-
-  key_vault_id = module.keyvault.key_vault_id
-
-  data_location     = var.acs_data_location
-  email_domain      = var.email_domain
-  tracking_disabled = var.email_tracking_disabled
 
   tags = local.common_tags
 }
@@ -192,6 +224,11 @@ module "observability" {
 
   # Key Vault — for writing AppInsights secret
   key_vault_id = module.keyvault.key_vault_id
+
+  # Log Analytics + AppInsights created above (before app_service)
+  log_analytics_workspace_id    = azurerm_log_analytics_workspace.main.id
+  application_insights_id       = azurerm_application_insights.main.id
+  appinsights_connection_string = azurerm_application_insights.main.connection_string
 
   # Resource IDs for diagnostic settings
   api_app_id         = module.app_service.api_app_id

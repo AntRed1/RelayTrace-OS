@@ -8,9 +8,10 @@ locals {
   kv = "VaultName=${var.key_vault_name};SecretName"
 }
 
-# Data sources to read secrets from Key Vault for Docker environment variables.
-# Docker in App Service does not resolve @Microsoft.KeyVault() references,
-# so we pass actual secret values instead. Managed Identity grants read access.
+# Data sources — only for secrets that exist BEFORE this module runs
+# (created by module.keyvault and module.data in earlier dependency chain).
+# Secrets created in the same apply (storage, acs, appinsights) are passed
+# as plain variables from main.tf to avoid plan-time "secret not found" errors.
 
 data "azurerm_key_vault_secret" "mysql_connection_string" {
   name         = "mysql-connection-string"
@@ -37,11 +38,6 @@ data "azurerm_key_vault_secret" "stripe_webhook_secret" {
   key_vault_id = var.key_vault_id
 }
 
-data "azurerm_key_vault_secret" "storage_account_name" {
-  name         = "storage-account-name"
-  key_vault_id = var.key_vault_id
-}
-
 data "azurerm_key_vault_secret" "redis_host" {
   name         = "redis-host"
   key_vault_id = var.key_vault_id
@@ -49,16 +45,6 @@ data "azurerm_key_vault_secret" "redis_host" {
 
 data "azurerm_key_vault_secret" "redis_password" {
   name         = "redis-password"
-  key_vault_id = var.key_vault_id
-}
-
-data "azurerm_key_vault_secret" "acs_connection_string" {
-  name         = "acs-connection-string"
-  key_vault_id = var.key_vault_id
-}
-
-data "azurerm_key_vault_secret" "appinsights_connection_string" {
-  name         = "appinsights-connection-string"
   key_vault_id = var.key_vault_id
 }
 
@@ -117,7 +103,7 @@ resource "azurerm_linux_web_app" "api" {
     "JWT_REFRESH_SECRET"         = data.azurerm_key_vault_secret.jwt_refresh_secret.value
     "STRIPE_SECRET_KEY"          = data.azurerm_key_vault_secret.stripe_secret_key.value
     "STRIPE_WEBHOOK_SECRET"      = data.azurerm_key_vault_secret.stripe_webhook_secret.value
-    "AZURE_STORAGE_ACCOUNT_NAME" = data.azurerm_key_vault_secret.storage_account_name.value
+    "AZURE_STORAGE_ACCOUNT_NAME" = var.storage_account_name
 
     # ── Redis ─────────────────────────────────────────────────────────────────
     # API reads discrete host/port/password (ioredis + BullMQ), not a URL.
@@ -128,7 +114,7 @@ resource "azurerm_linux_web_app" "api" {
     "REDIS_TLS"      = "true"
 
     # ── Communication (ACS Email) ─────────────────────────────────────────────
-    "ACS_CONNECTION_STRING" = data.azurerm_key_vault_secret.acs_connection_string.value
+    "ACS_CONNECTION_STRING" = var.acs_connection_string
     "ACS_FROM_ADDRESS"      = var.acs_from_address
 
     # ── Storage containers (not sensitive — plain values) ─────────────────────
@@ -151,7 +137,7 @@ resource "azurerm_linux_web_app" "api" {
     "DOCKER_ENABLE_CI" = "true"
 
     # ── Observability ─────────────────────────────────────────────────────────
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = data.azurerm_key_vault_secret.appinsights_connection_string.value
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = var.appinsights_connection_string
   }
 
   tags = var.tags

@@ -86,6 +86,28 @@ variable "web_custom_domain" {
   default     = ""
 }
 
+# ── Secrets passed directly (not via Key Vault data sources) ──────────────────
+# These secrets are created by other modules in the same apply run.
+# Passing as variables avoids "secret does not exist" errors from eager
+# data source evaluation at plan time.
+
+variable "storage_account_name" {
+  description = "Name of the Storage Account (for MSI-based access without a shared key)."
+  type        = string
+}
+
+variable "acs_connection_string" {
+  description = "Primary connection string for Azure Communication Services."
+  type        = string
+  sensitive   = true
+}
+
+variable "appinsights_connection_string" {
+  description = "Application Insights connection string for telemetry."
+  type        = string
+  sensitive   = true
+}
+
 variable "stripe_price_starter" {
   description = "Stripe Price ID for the Starter plan (recurring monthly)."
   type        = string

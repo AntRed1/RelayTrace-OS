@@ -14,7 +14,7 @@
 resource "azurerm_monitor_diagnostic_setting" "api_app" {
   name                       = "diag-api-${var.prefix}"
   target_resource_id         = var.api_app_id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log { category = "AppServiceHTTPLogs" }    # HTTP access log
   enabled_log { category = "AppServiceConsoleLogs" } # Container stdout/stderr
@@ -32,7 +32,7 @@ resource "azurerm_monitor_diagnostic_setting" "api_app" {
 resource "azurerm_monitor_diagnostic_setting" "web_app" {
   name                       = "diag-web-${var.prefix}"
   target_resource_id         = var.web_app_id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log { category = "AppServiceHTTPLogs" }
   enabled_log { category = "AppServiceConsoleLogs" }
@@ -50,7 +50,7 @@ resource "azurerm_monitor_diagnostic_setting" "web_app" {
 resource "azurerm_monitor_diagnostic_setting" "keyvault" {
   name                       = "diag-kv-${var.prefix}"
   target_resource_id         = var.key_vault_id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log { category = "AuditEvent" } # Secret access audit
   enabled_log { category = "AzurePolicyEvaluationDetails" }
@@ -66,7 +66,7 @@ resource "azurerm_monitor_diagnostic_setting" "keyvault" {
 resource "azurerm_monitor_diagnostic_setting" "mysql" {
   name                       = "diag-mysql-${var.prefix}"
   target_resource_id         = var.mysql_server_id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log { category = "MySqlSlowLogs" }  # Requires slow_query_log=ON on server
   enabled_log { category = "MySqlAuditLogs" } # Requires audit_log_enabled=ON
@@ -82,7 +82,7 @@ resource "azurerm_monitor_diagnostic_setting" "mysql" {
 resource "azurerm_monitor_diagnostic_setting" "redis" {
   name                       = "diag-redis-${var.prefix}"
   target_resource_id         = var.redis_id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log { category = "ConnectedClientList" }
 
@@ -98,7 +98,7 @@ resource "azurerm_monitor_diagnostic_setting" "redis" {
 resource "azurerm_monitor_diagnostic_setting" "storage_blob" {
   name                       = "diag-storage-blob-${var.prefix}"
   target_resource_id         = "${var.storage_account_id}/blobServices/default"
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log { category = "StorageRead" }
   enabled_log { category = "StorageWrite" }

@@ -43,3 +43,9 @@ output "secret_uri_acs_connection_string" {
   description = "Versionless Key Vault URI for the acs-connection-string secret."
   value       = azurerm_key_vault_secret.acs_connection_string.versionless_id
 }
+
+output "acs_connection_string" {
+  description = "Primary connection string for the Azure Communication Service."
+  value       = azurerm_communication_service.this.primary_connection_string
+  sensitive   = true
+}

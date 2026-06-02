@@ -2,35 +2,19 @@
 
 output "workspace_id" {
   description = "Resource ID of the Log Analytics Workspace."
-  value       = azurerm_log_analytics_workspace.this.id
-}
-
-output "workspace_name" {
-  description = "Name of the Log Analytics Workspace."
-  value       = azurerm_log_analytics_workspace.this.name
+  value       = var.log_analytics_workspace_id
 }
 
 # ── Application Insights ──────────────────────────────────────────────────────
 
 output "app_insights_id" {
   description = "Resource ID of the Application Insights instance."
-  value       = azurerm_application_insights.this.id
-}
-
-output "app_insights_name" {
-  description = "Name of the Application Insights instance."
-  value       = azurerm_application_insights.this.name
-}
-
-output "instrumentation_key" {
-  description = "Application Insights instrumentation key (legacy — prefer connection_string)."
-  value       = azurerm_application_insights.this.instrumentation_key
-  sensitive   = true
+  value       = var.application_insights_id
 }
 
 output "connection_string" {
   description = "Application Insights connection string."
-  value       = azurerm_application_insights.this.connection_string
+  value       = var.appinsights_connection_string
   sensitive   = true
 }
 

@@ -146,5 +146,5 @@ output "log_analytics_workspace_id" {
 
 output "app_insights_name" {
   description = "Name of the Application Insights instance."
-  value       = module.observability.app_insights_name
+  value       = azurerm_application_insights.main.name
 }

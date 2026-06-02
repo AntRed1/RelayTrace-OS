@@ -46,8 +46,9 @@ resource "azurerm_linux_web_app" "web" {
     "DOCKER_ENABLE_CI" = "true"
 
     # ── Observability ─────────────────────────────────────────────────────────
-    # Docker does not resolve @Microsoft.KeyVault() references, fetch actual value.
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = data.azurerm_key_vault_secret.appinsights_connection_string.value
+    # Passed directly as a variable (AppInsights is created before App Service
+    # in main.tf to avoid the circular dependency with module.observability).
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = var.appinsights_connection_string
   }
 
   tags = var.tags
