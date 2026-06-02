@@ -15,7 +15,7 @@ import { AuditModule } from '../audit/audit.module';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('jwt.secret'),
         signOptions: {
-          expiresIn: configService.get('jwt.expiresIn'),
+          expiresIn: parseInt(configService.get('jwt.expiresIn') || '3600'),
         },
       }),
     }),
@@ -25,4 +25,4 @@ import { AuditModule } from '../audit/audit.module';
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

@@ -15,6 +15,7 @@ function parseMysqlUrl(url: string) {
     database: parsed.pathname.replace('/', ''),
     connectionLimit: 10,
     allowPublicKeyRetrieval: true,
+    ssl: { rejectUnauthorized: false },
   };
 }
 
@@ -38,10 +39,10 @@ interface SeedConfig {
 
 function getSeedConfig(): SeedConfig {
   const config: SeedConfig = {
-    SEED_COMPANY_NAME:   process.env.SEED_COMPANY_NAME   ?? 'RelayTrace Admin',
-    SEED_COMPANY_EMAIL:  process.env.SEED_COMPANY_EMAIL  ?? 'admin@relaytrace.local',
-    SEED_ADMIN_NAME:     process.env.SEED_ADMIN_NAME     ?? 'Super Admin',
-    SEED_ADMIN_EMAIL:    process.env.SEED_ADMIN_EMAIL    ?? 'admin@relaytrace.local',
+    SEED_COMPANY_NAME: process.env.SEED_COMPANY_NAME ?? 'RelayTrace Admin',
+    SEED_COMPANY_EMAIL: process.env.SEED_COMPANY_EMAIL ?? 'admin@relaytrace.local',
+    SEED_ADMIN_NAME: process.env.SEED_ADMIN_NAME ?? 'Super Admin',
+    SEED_ADMIN_EMAIL: process.env.SEED_ADMIN_EMAIL ?? 'admin@relaytrace.local',
     SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD ?? '@Emulador1', // ⚠️  DEV ONLY
   };
 
@@ -122,29 +123,29 @@ async function main() {
     await prisma.plan.upsert({
       where: { slug: plan.slug },
       update: {
-        displayName:   plan.displayName,
-        description:   plan.description,
-        priceMonthly:  plan.priceMonthly,
-        maxDrivers:    plan.maxDrivers,
+        displayName: plan.displayName,
+        description: plan.description,
+        priceMonthly: plan.priceMonthly,
+        maxDrivers: plan.maxDrivers,
         featureLabels: JSON.stringify(plan.featureLabels),
-        featureFlags:  JSON.stringify(plan.featureFlags),
-        isPopular:     plan.isPopular,
-        sortOrder:     plan.sortOrder,
-        ctaLabel:      plan.ctaLabel,
+        featureFlags: JSON.stringify(plan.featureFlags),
+        isPopular: plan.isPopular,
+        sortOrder: plan.sortOrder,
+        ctaLabel: plan.ctaLabel,
       },
       create: {
-        slug:          plan.slug,
-        displayName:   plan.displayName,
-        description:   plan.description,
-        priceMonthly:  plan.priceMonthly,
-        maxDrivers:    plan.maxDrivers,
+        slug: plan.slug,
+        displayName: plan.displayName,
+        description: plan.description,
+        priceMonthly: plan.priceMonthly,
+        maxDrivers: plan.maxDrivers,
         featureLabels: JSON.stringify(plan.featureLabels),
-        featureFlags:  JSON.stringify(plan.featureFlags),
-        isActive:      true,
-        isPopular:     plan.isPopular,
-        sortOrder:     plan.sortOrder,
-        ctaLabel:      plan.ctaLabel,
-        currency:      'USD',
+        featureFlags: JSON.stringify(plan.featureFlags),
+        isActive: true,
+        isPopular: plan.isPopular,
+        sortOrder: plan.sortOrder,
+        ctaLabel: plan.ctaLabel,
+        currency: 'USD',
       },
     });
   }
